@@ -49,7 +49,7 @@ export default class JoyrideTooltip extends React.Component {
 
   render() {
     const { continuous, index, isLastStep, setTooltipRef, size, step } = this.props;
-    const { content, locale, title, tooltipComponent, ...restStepProps } = step;
+    const { content, locale, title, tooltipComponent: TooltipComponent, ...restStepProps } = step;
     const { back, close, last, next, skip } = locale;
     let primaryText = continuous ? next : close;
 
@@ -65,7 +65,7 @@ export default class JoyrideTooltip extends React.Component {
       skipProps: { 'aria-label': skip, onClick: this.handleClickSkip, role: 'button', title: skip },
     };
 
-    if (tooltipComponent) {
+    if (React.isValidElement(TooltipComponent)) {
       const renderProps = {
         ...restStepProps,
         ...buttonProps,
@@ -79,12 +79,7 @@ export default class JoyrideTooltip extends React.Component {
         title,
       };
 
-      if (React.isValidElement(tooltipComponent)) {
-        component = React.cloneElement(tooltipComponent, renderProps);
-      }
-      else {
-        component = tooltipComponent(renderProps);
-      }
+      component = <TooltipComponent {...renderProps} />;
     }
     else {
       component = (

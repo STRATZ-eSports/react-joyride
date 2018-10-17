@@ -1682,7 +1682,7 @@ var JoyrideTooltip = function (_React$Component) {
       var content = step.content,
           locale = step.locale,
           title = step.title,
-          tooltipComponent = step.tooltipComponent,
+          TooltipComponent = step.tooltipComponent,
           restStepProps = objectWithoutProperties(step, ['content', 'locale', 'title', 'tooltipComponent']);
       var back = locale.back,
           close = locale.close,
@@ -1704,7 +1704,7 @@ var JoyrideTooltip = function (_React$Component) {
         skipProps: { 'aria-label': skip, onClick: this.handleClickSkip, role: 'button', title: skip }
       };
 
-      if (tooltipComponent) {
+      if (React.isValidElement(TooltipComponent)) {
         var renderProps = _extends({}, restStepProps, buttonProps, {
           content: content,
           continuous: continuous,
@@ -1716,11 +1716,7 @@ var JoyrideTooltip = function (_React$Component) {
           title: title
         });
 
-        if (React.isValidElement(tooltipComponent)) {
-          component = React.cloneElement(tooltipComponent, renderProps);
-        } else {
-          component = tooltipComponent(renderProps);
-        }
+        component = React.createElement(TooltipComponent, renderProps);
       } else {
         component = React.createElement(JoyrideTooltipContainer, _extends({
           continuous: continuous,
