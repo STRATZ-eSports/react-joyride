@@ -49,7 +49,7 @@ export default class JoyrideTooltip extends React.Component {
 
   render() {
     const { continuous, index, isLastStep, setTooltipRef, size, step } = this.props;
-    const { content, locale, title, tooltipComponent } = step;
+    const { content, locale, title, tooltipComponent, ...restStepProps } = step;
     const { back, close, last, next, skip } = locale;
     let primaryText = continuous ? next : close;
 
@@ -67,6 +67,7 @@ export default class JoyrideTooltip extends React.Component {
 
     if (tooltipComponent) {
       const renderProps = {
+        ...restStepProps,
         ...buttonProps,
         content,
         continuous,
