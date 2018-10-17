@@ -1704,7 +1704,7 @@ var JoyrideTooltip = function (_React$Component) {
         skipProps: { 'aria-label': skip, onClick: this.handleClickSkip, role: 'button', title: skip }
       };
 
-      if (React.isValidElement(TooltipComponent)) {
+      if (TooltipComponent) {
         var renderProps = _extends({}, restStepProps, buttonProps, {
           content: content,
           continuous: continuous,

@@ -65,7 +65,7 @@ export default class JoyrideTooltip extends React.Component {
       skipProps: { 'aria-label': skip, onClick: this.handleClickSkip, role: 'button', title: skip },
     };
 
-    if (React.isValidElement(TooltipComponent)) {
+    if (TooltipComponent) {
       const renderProps = {
         ...restStepProps,
         ...buttonProps,
