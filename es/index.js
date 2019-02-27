@@ -1,15 +1,206 @@
-import ReactDOM from 'react-dom';
-import ExecutionEnvironment from 'exenv';
-import is from 'is-lite';
-import scroll from 'scroll';
-import scrollDoc from 'scroll-doc';
-import getScrollParent from 'scrollparent';
-import deepmerge from 'deepmerge';
-import React from 'react';
+import React, { isValidElement } from 'react';
 import PropTypes from 'prop-types';
 import treeChanges from 'tree-changes';
-import isRequiredIf from 'react-proptype-conditional-require';
+import is from 'is-lite';
+import ReactDOM, { createPortal } from 'react-dom';
+import ExecutionEnvironment from 'exenv';
+import scroll from 'scroll';
+import scrollDoc from 'scroll-doc';
+import scrollParent from 'scrollparent';
+import { isValidElementType, Element, ForwardRef, typeOf } from 'react-is';
+import deepmerge from 'deepmerge';
 import Floater from 'react-floater';
+
+function _classCallCheck(instance, Constructor) {
+  if (!(instance instanceof Constructor)) {
+    throw new TypeError("Cannot call a class as a function");
+  }
+}
+
+function _defineProperties(target, props) {
+  for (var i = 0; i < props.length; i++) {
+    var descriptor = props[i];
+    descriptor.enumerable = descriptor.enumerable || false;
+    descriptor.configurable = true;
+    if ("value" in descriptor) descriptor.writable = true;
+    Object.defineProperty(target, descriptor.key, descriptor);
+  }
+}
+
+function _createClass(Constructor, protoProps, staticProps) {
+  if (protoProps) _defineProperties(Constructor.prototype, protoProps);
+  if (staticProps) _defineProperties(Constructor, staticProps);
+  return Constructor;
+}
+
+function _defineProperty(obj, key, value) {
+  if (key in obj) {
+    Object.defineProperty(obj, key, {
+      value: value,
+      enumerable: true,
+      configurable: true,
+      writable: true
+    });
+  } else {
+    obj[key] = value;
+  }
+
+  return obj;
+}
+
+function _extends() {
+  _extends = Object.assign || function (target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var source = arguments[i];
+
+      for (var key in source) {
+        if (Object.prototype.hasOwnProperty.call(source, key)) {
+          target[key] = source[key];
+        }
+      }
+    }
+
+    return target;
+  };
+
+  return _extends.apply(this, arguments);
+}
+
+function _objectSpread(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+    var ownKeys = Object.keys(source);
+
+    if (typeof Object.getOwnPropertySymbols === 'function') {
+      ownKeys = ownKeys.concat(Object.getOwnPropertySymbols(source).filter(function (sym) {
+        return Object.getOwnPropertyDescriptor(source, sym).enumerable;
+      }));
+    }
+
+    ownKeys.forEach(function (key) {
+      _defineProperty(target, key, source[key]);
+    });
+  }
+
+  return target;
+}
+
+function _inherits(subClass, superClass) {
+  if (typeof superClass !== "function" && superClass !== null) {
+    throw new TypeError("Super expression must either be null or a function");
+  }
+
+  subClass.prototype = Object.create(superClass && superClass.prototype, {
+    constructor: {
+      value: subClass,
+      writable: true,
+      configurable: true
+    }
+  });
+  if (superClass) _setPrototypeOf(subClass, superClass);
+}
+
+function _getPrototypeOf(o) {
+  _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) {
+    return o.__proto__ || Object.getPrototypeOf(o);
+  };
+  return _getPrototypeOf(o);
+}
+
+function _setPrototypeOf(o, p) {
+  _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+    o.__proto__ = p;
+    return o;
+  };
+
+  return _setPrototypeOf(o, p);
+}
+
+function _objectWithoutPropertiesLoose(source, excluded) {
+  if (source == null) return {};
+  var target = {};
+  var sourceKeys = Object.keys(source);
+  var key, i;
+
+  for (i = 0; i < sourceKeys.length; i++) {
+    key = sourceKeys[i];
+    if (excluded.indexOf(key) >= 0) continue;
+    target[key] = source[key];
+  }
+
+  return target;
+}
+
+function _objectWithoutProperties(source, excluded) {
+  if (source == null) return {};
+
+  var target = _objectWithoutPropertiesLoose(source, excluded);
+
+  var key, i;
+
+  if (Object.getOwnPropertySymbols) {
+    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+
+    for (i = 0; i < sourceSymbolKeys.length; i++) {
+      key = sourceSymbolKeys[i];
+      if (excluded.indexOf(key) >= 0) continue;
+      if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+      target[key] = source[key];
+    }
+  }
+
+  return target;
+}
+
+function _assertThisInitialized(self) {
+  if (self === void 0) {
+    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
+  }
+
+  return self;
+}
+
+function _possibleConstructorReturn(self, call) {
+  if (call && (typeof call === "object" || typeof call === "function")) {
+    return call;
+  }
+
+  return _assertThisInitialized(self);
+}
+
+var ACTIONS = {
+  INIT: 'init',
+  START: 'start',
+  STOP: 'stop',
+  RESET: 'reset',
+  PREV: 'prev',
+  NEXT: 'next',
+  GO: 'go',
+  CLOSE: 'close',
+  SKIP: 'skip',
+  UPDATE: 'update'
+};
+
+var EVENTS = {
+  TOUR_START: 'tour:start',
+  STEP_BEFORE: 'step:before',
+  BEACON: 'beacon',
+  TOOLTIP: 'tooltip',
+  STEP_AFTER: 'step:after',
+  TOUR_END: 'tour:end',
+  TOUR_STATUS: 'tour:status',
+  TARGET_NOT_FOUND: 'error:target_not_found',
+  ERROR: 'error'
+};
+
+var LIFECYCLE = {
+  INIT: 'init',
+  READY: 'ready',
+  BEACON: 'beacon',
+  TOOLTIP: 'tooltip',
+  COMPLETE: 'complete',
+  ERROR: 'error'
+};
 
 var STATUS = {
   IDLE: 'idle',
@@ -22,182 +213,196 @@ var STATUS = {
   ERROR: 'error'
 };
 
-var ACTIONS = {
-  INIT: 'init',
-  START: 'start',
-  STOP: 'stop',
-  RESET: 'reset',
-  RESTART: 'restart',
-  PREV: 'prev',
-  NEXT: 'next',
-  GO: 'go',
-  INDEX: 'index',
-  CLOSE: 'close',
-  SKIP: 'skip',
-  UPDATE: 'update'
-};
+var canUseDOM = ExecutionEnvironment.canUseDOM;
+var isReact16 = createPortal !== undefined;
+/**
+ * Get the current browser
+ *
+ * @param {string} userAgent
+ *
+ * @returns {String}
+ */
 
-var LIFECYCLE = {
-  INIT: 'init',
-  READY: 'ready',
-  BEACON: 'beacon',
-  TOOLTIP: 'tooltip',
-  COMPLETE: 'complete',
-  ERROR: 'error'
-};
+function getBrowser() {
+  var userAgent = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : navigator.userAgent;
+  var browser = userAgent;
 
-var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-  return typeof obj;
-} : function (obj) {
-  return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-};
+  if (typeof window === 'undefined') {
+    browser = 'node';
+  } else if (document.documentMode) {
+    browser = 'ie';
+  } else if (/Edge/.test(userAgent)) {
+    browser = 'edge';
+  } // Opera 8.0+
+  else if (Boolean(window.opera) || userAgent.indexOf(' OPR/') >= 0) {
+      browser = 'opera';
+    } // Firefox 1.0+
+    else if (typeof window.InstallTrigger !== 'undefined') {
+        browser = 'firefox';
+      } // Chrome 1+
+      else if (window.chrome) {
+          browser = 'chrome';
+        } // Safari (and Chrome iOS, Firefox iOS)
+        else if (/(Version\/([0-9._]+).*Safari|CriOS|FxiOS| Mobile\/)/.test(userAgent)) {
+            browser = 'safari';
+          }
 
-var classCallCheck = function (instance, Constructor) {
-  if (!(instance instanceof Constructor)) {
-    throw new TypeError("Cannot call a class as a function");
-  }
-};
+  return browser;
+}
+/**
+ * Get the toString Object type
+ * @param {*} value
+ * @returns {string}
+ */
 
-var createClass = function () {
-  function defineProperties(target, props) {
-    for (var i = 0; i < props.length; i++) {
-      var descriptor = props[i];
-      descriptor.enumerable = descriptor.enumerable || false;
-      descriptor.configurable = true;
-      if ("value" in descriptor) descriptor.writable = true;
-      Object.defineProperty(target, descriptor.key, descriptor);
-    }
-  }
+function getObjectType(value) {
+  return Object.prototype.toString.call(value).slice(8, -1).toLowerCase();
+}
+/**
+ * Get text from React components
+ *
+ * @param {*} root
+ *
+ * @returns {string}
+ */
 
-  return function (Constructor, protoProps, staticProps) {
-    if (protoProps) defineProperties(Constructor.prototype, protoProps);
-    if (staticProps) defineProperties(Constructor, staticProps);
-    return Constructor;
-  };
-}();
+function getText(root) {
+  var content = [];
 
-var _extends = Object.assign || function (target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i];
+  var recurse = function recurse(child) {
+    /* istanbul ignore else */
+    if (typeof child === 'string' || typeof child === 'number') {
+      content.push(child);
+    } else if (Array.isArray(child)) {
+      child.forEach(function (c) {
+        return recurse(c);
+      });
+    } else if (child && child.props) {
+      var children = child.props.children;
 
-    for (var key in source) {
-      if (Object.prototype.hasOwnProperty.call(source, key)) {
-        target[key] = source[key];
+      if (Array.isArray(children)) {
+        children.forEach(function (c) {
+          return recurse(c);
+        });
+      } else {
+        recurse(children);
       }
     }
+  };
+
+  recurse(root);
+  return content.join(' ').trim();
+}
+function hasOwnProperty(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+function hasValidKeys(value, keys) {
+  if (!is.plainObject(value) || !is.array(keys)) {
+    return false;
   }
 
-  return target;
-};
-
-var inherits = function (subClass, superClass) {
-  if (typeof superClass !== "function" && superClass !== null) {
-    throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
-  }
-
-  subClass.prototype = Object.create(superClass && superClass.prototype, {
-    constructor: {
-      value: subClass,
-      enumerable: false,
-      writable: true,
-      configurable: true
-    }
+  return Object.keys(value).every(function (d) {
+    return keys.includes(d);
   });
-  if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
-};
-
-var objectWithoutProperties = function (obj, keys) {
-  var target = {};
-
-  for (var i in obj) {
-    if (keys.indexOf(i) >= 0) continue;
-    if (!Object.prototype.hasOwnProperty.call(obj, i)) continue;
-    target[i] = obj[i];
-  }
-
-  return target;
-};
-
-var possibleConstructorReturn = function (self, call) {
-  if (!self) {
-    throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
-  }
-
-  return call && (typeof call === "object" || typeof call === "function") ? call : self;
-};
-
-var canUseDOM = ExecutionEnvironment.canUseDOM;
-
-var isReact16 = ReactDOM.createPortal !== undefined;
-
+}
 /**
  * Convert hex to RGB
  *
  * @param {string} hex
  * @returns {Array}
  */
+
 function hexToRGB(hex) {
-  // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
   var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
   var properHex = hex.replace(shorthandRegex, function (m, r, g, b) {
     return r + r + g + g + b + b;
   });
-
   var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(properHex);
-  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : null;
+  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [];
 }
-
 /**
- * Get the current browser
+ * Decide if the step shouldn't skip the beacon
+ * @param {Object} step
  *
- * @returns {String}
+ * @returns {boolean}
  */
-function getBrowser() {
-  /* istanbul ignore if */
-  if (typeof window === 'undefined') {
-    return 'node';
-  }
 
-  if (document.documentMode) {
-    return 'ie';
-  }
-
-  if (/Edge/.test(navigator.userAgent)) {
-    return 'edge';
-  }
-
-  // Opera 8.0+
-  if (Boolean(window.opera) || navigator.userAgent.indexOf(' OPR/') >= 0) {
-    return 'opera';
-  }
-
-  // Firefox 1.0+
-  if (typeof window.InstallTrigger !== 'undefined') {
-    return 'firefox';
-  }
-
-  // Chrome 1+
-  if (window.chrome) {
-    return 'chrome';
-  }
-
-  // Safari (and Chrome iOS, Firefox iOS)
-  if (/(Version\/([0-9._]+).*Safari|CriOS|FxiOS| Mobile\/)/.test(navigator.userAgent)) {
-    return 'safari';
-  }
-
-  return navigator.userAgent;
+function hideBeacon(step) {
+  return step.disableBeacon || step.placement === 'center';
 }
+/**
+ * Compare if two variables are equal
+ *
+ * @param {*} left
+ * @param {*} right
+ *
+ * @returns {boolean}
+ */
 
+function isEqual(left, right) {
+  var type;
+  var hasReactElement = isValidElement(left) || isValidElement(right);
+  var hasUndefined = is.undefined(left) || is.undefined(right);
+
+  if (getObjectType(left) !== getObjectType(right) || hasReactElement || hasUndefined) {
+    return false;
+  }
+
+  if (is.domElement(left)) {
+    return left.isSameNode(right);
+  }
+
+  if (is.number(left)) {
+    return left === right;
+  }
+
+  if (is.function(left)) {
+    return left.toString() === right.toString();
+  }
+
+  for (var key in left) {
+    /* istanbul ignore else */
+    if (hasOwnProperty(left, key)) {
+      if (typeof left[key] === 'undefined' || typeof right[key] === 'undefined') {
+        return false;
+      }
+
+      type = getObjectType(left[key]);
+
+      if (['object', 'array'].includes(type) && isEqual(left[key], right[key])) {
+        continue;
+      }
+
+      if (type === 'function' && isEqual(left[key], right[key])) {
+        continue;
+      }
+
+      if (left[key] !== right[key]) {
+        return false;
+      }
+    }
+  }
+
+  for (var p in right) {
+    /* istanbul ignore else */
+    if (hasOwnProperty(right, p)) {
+      if (typeof left[p] === 'undefined') {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
 /**
  * Detect legacy browsers
  *
  * @returns {boolean}
  */
-function isLegacy() {
-  return !(['chrome', 'safari', 'firefox', 'opera'].indexOf(getBrowser()) !== -1);
-}
 
+function isLegacy() {
+  return !['chrome', 'safari', 'firefox', 'opera'].includes(getBrowser());
+}
 /**
  * Log method calls if debug is enabled
  *
@@ -208,89 +413,41 @@ function isLegacy() {
  * @param {boolean}      [arg.warn]  - If true, the message will be a warning
  * @param {boolean}      [arg.debug] - Nothing will be logged unless debug is true
  */
+
 function log(_ref) {
   var title = _ref.title,
       data = _ref.data,
       _ref$warn = _ref.warn,
-      warn = _ref$warn === undefined ? false : _ref$warn,
+      warn = _ref$warn === void 0 ? false : _ref$warn,
       _ref$debug = _ref.debug,
-      debug = _ref$debug === undefined ? false : _ref$debug;
+      debug = _ref$debug === void 0 ? false : _ref$debug;
 
   /* eslint-disable no-console */
   var logFn = warn ? console.warn || console.error : console.log;
 
-  if (debug && title && data) {
-    console.groupCollapsed('%creact-joyride: ' + title, 'color: #ff0044; font-weight: bold; font-size: 12px;');
+  if (debug) {
+    if (title && data) {
+      console.groupCollapsed("%creact-joyride: ".concat(title), 'color: #ff0044; font-weight: bold; font-size: 12px;');
 
-    if (Array.isArray(data)) {
-      data.forEach(function (d) {
-        if (is.plainObject(d) && d.key) {
-          logFn.apply(console, [d.key, d.value]);
-        } else {
-          logFn.apply(console, [d]);
-        }
-      });
+      if (Array.isArray(data)) {
+        data.forEach(function (d) {
+          if (is.plainObject(d) && d.key) {
+            logFn.apply(console, [d.key, d.value]);
+          } else {
+            logFn.apply(console, [d]);
+          }
+        });
+      } else {
+        logFn.apply(console, [data]);
+      }
+
+      console.groupEnd();
     } else {
-      logFn.apply(console, [data]);
+      console.error('Missing title or data props');
     }
-
-    console.groupEnd();
   }
   /* eslint-enable */
-}
 
-function hasValidKeys(value, keys) {
-  if (!is.plainObject(value) || !is.array(keys)) {
-    return false;
-  }
-  var validKeys = keys;
-
-  if (is.string(keys)) {
-    validKeys = [keys];
-  }
-
-  return Object.keys(value).every(function (d) {
-    return validKeys.indexOf(d) !== -1;
-  });
-}
-
-function isEqual(a, b) {
-  var p = void 0;
-  var t = void 0;
-
-  for (p in a) {
-    if (Object.prototype.hasOwnProperty.call(a, p)) {
-      if (typeof b[p] === 'undefined') {
-        return false;
-      }
-
-      if (b[p] && !a[p]) {
-        return false;
-      }
-
-      t = _typeof(a[p]);
-
-      if (t === 'object' && !isEqual(a[p], b[p])) {
-        return false;
-      }
-
-      if (t === 'function' && (typeof b[p] === 'undefined' || a[p].toString() !== b[p].toString())) {
-        return false;
-      }
-
-      if (a[p] !== b[p]) {
-        return false;
-      }
-    }
-  }
-
-  for (p in b) {
-    if (typeof a[p] === 'undefined') {
-      return false;
-    }
-  }
-
-  return true;
 }
 
 var defaultState = {
@@ -301,25 +458,178 @@ var defaultState = {
   size: 0,
   status: STATUS.IDLE
 };
-
 var validKeys = ['action', 'index', 'lifecycle', 'status'];
-
 function createStore(props) {
   var store = new Map();
   var data = new Map();
 
-  var Store = function () {
+  var Store =
+  /*#__PURE__*/
+  function () {
     function Store() {
+      var _this = this;
+
       var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
           _ref$continuous = _ref.continuous,
-          continuous = _ref$continuous === undefined ? false : _ref$continuous,
+          continuous = _ref$continuous === void 0 ? false : _ref$continuous,
           stepIndex = _ref.stepIndex,
           _ref$steps = _ref.steps,
-          steps = _ref$steps === undefined ? [] : _ref$steps;
+          _steps = _ref$steps === void 0 ? [] : _ref$steps;
 
-      classCallCheck(this, Store);
+      _classCallCheck(this, Store);
 
-      _initialiseProps.call(this);
+      _defineProperty(this, "listener", void 0);
+
+      _defineProperty(this, "setSteps", function (steps) {
+        var _this$getState = _this.getState(),
+            size = _this$getState.size,
+            status = _this$getState.status;
+
+        var state = {
+          size: steps.length,
+          status: status
+        };
+        data.set('steps', steps);
+
+        if (status === STATUS.WAITING && !size && steps.length) {
+          state.status = STATUS.RUNNING;
+        }
+
+        _this.setState(state);
+      });
+
+      _defineProperty(this, "addListener", function (listener) {
+        _this.listener = listener;
+      });
+
+      _defineProperty(this, "update", function (state) {
+        if (!hasValidKeys(state, validKeys)) {
+          throw new Error("State is not valid. Valid keys: ".concat(validKeys.join(', ')));
+        }
+
+        _this.setState(_objectSpread({}, _this.getNextState(_objectSpread({}, _this.getState(), state, {
+          action: state.action || ACTIONS.UPDATE
+        }), true)));
+      });
+
+      _defineProperty(this, "start", function (nextIndex) {
+        var _this$getState2 = _this.getState(),
+            index = _this$getState2.index,
+            size = _this$getState2.size;
+
+        _this.setState(_objectSpread({}, _this.getNextState({
+          action: ACTIONS.START,
+          index: is.number(nextIndex) ? nextIndex : index
+        }, true), {
+          status: size ? STATUS.RUNNING : STATUS.WAITING
+        }));
+      });
+
+      _defineProperty(this, "stop", function () {
+        var advance = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+        var _this$getState3 = _this.getState(),
+            index = _this$getState3.index,
+            status = _this$getState3.status;
+
+        if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) return;
+
+        _this.setState(_objectSpread({}, _this.getNextState({
+          action: ACTIONS.STOP,
+          index: index + (advance ? 1 : 0)
+        }), {
+          status: STATUS.PAUSED
+        }));
+      });
+
+      _defineProperty(this, "prev", function () {
+        var _this$getState4 = _this.getState(),
+            index = _this$getState4.index,
+            status = _this$getState4.status;
+
+        if (status !== STATUS.RUNNING) return;
+
+        _this.setState(_objectSpread({}, _this.getNextState({
+          action: ACTIONS.PREV,
+          index: index - 1
+        })));
+      });
+
+      _defineProperty(this, "next", function () {
+        var _this$getState5 = _this.getState(),
+            index = _this$getState5.index,
+            status = _this$getState5.status;
+
+        if (status !== STATUS.RUNNING) return;
+
+        _this.setState(_this.getNextState({
+          action: ACTIONS.NEXT,
+          index: index + 1
+        }));
+      });
+
+      _defineProperty(this, "go", function (nextIndex) {
+        var _this$getState6 = _this.getState(),
+            controlled = _this$getState6.controlled,
+            status = _this$getState6.status;
+
+        if (controlled || status !== STATUS.RUNNING) return;
+
+        var step = _this.getSteps()[nextIndex];
+
+        _this.setState(_objectSpread({}, _this.getNextState({
+          action: ACTIONS.GO,
+          index: nextIndex
+        }), {
+          status: step ? status : STATUS.FINISHED
+        }));
+      });
+
+      _defineProperty(this, "close", function () {
+        var _this$getState7 = _this.getState(),
+            index = _this$getState7.index,
+            status = _this$getState7.status;
+
+        if (status !== STATUS.RUNNING) return;
+
+        _this.setState(_objectSpread({}, _this.getNextState({
+          action: ACTIONS.CLOSE,
+          index: index + 1
+        })));
+      });
+
+      _defineProperty(this, "skip", function () {
+        var _this$getState8 = _this.getState(),
+            status = _this$getState8.status;
+
+        if (status !== STATUS.RUNNING) return;
+
+        _this.setState({
+          action: ACTIONS.SKIP,
+          lifecycle: LIFECYCLE.INIT,
+          status: STATUS.SKIPPED
+        });
+      });
+
+      _defineProperty(this, "reset", function () {
+        var restart = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
+
+        var _this$getState9 = _this.getState(),
+            controlled = _this$getState9.controlled;
+
+        if (controlled) return;
+
+        _this.setState(_objectSpread({}, _this.getNextState({
+          action: ACTIONS.RESET,
+          index: 0
+        }), {
+          status: restart ? STATUS.RUNNING : STATUS.READY
+        }));
+      });
+
+      _defineProperty(this, "info", function () {
+        return _this.getState();
+      });
 
       this.setState({
         action: ACTIONS.INIT,
@@ -327,274 +637,111 @@ function createStore(props) {
         continuous: continuous,
         index: is.number(stepIndex) ? stepIndex : 0,
         lifecycle: LIFECYCLE.INIT,
-        status: steps.length ? STATUS.READY : STATUS.IDLE
+        status: _steps.length ? STATUS.READY : STATUS.IDLE
       }, true);
-
-      this.setSteps(steps);
+      this.setSteps(_steps);
     }
 
-    createClass(Store, [{
-      key: 'addListener',
-      value: function addListener(listener) {
-        this.listener = listener;
-      }
-    }, {
-      key: 'setState',
+    _createClass(Store, [{
+      key: "setState",
       value: function setState(nextState) {
         var initial = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-
         var state = this.getState();
 
-        var _state$nextState = _extends({}, state, nextState),
+        var _state$nextState = _objectSpread({}, state, nextState),
             action = _state$nextState.action,
             index = _state$nextState.index,
             lifecycle = _state$nextState.lifecycle,
+            size = _state$nextState.size,
             status = _state$nextState.status;
 
         store.set('action', action);
         store.set('index', index);
         store.set('lifecycle', lifecycle);
+        store.set('size', size);
         store.set('status', status);
 
         if (initial) {
           store.set('controlled', nextState.controlled);
           store.set('continuous', nextState.continuous);
         }
-
         /* istanbul ignore else */
+
+
         if (this.listener && this.hasUpdatedState(state)) {
           // console.log('▶ ▶ ▶ NEW STATE', this.getState());
           this.listener(this.getState());
         }
       }
     }, {
-      key: 'getState',
+      key: "getState",
       value: function getState() {
         if (!store.size) {
-          return _extends({}, defaultState);
+          return _objectSpread({}, defaultState);
         }
 
-        var index = parseInt(store.get('index'), 10);
-        var steps = this.getSteps();
-        var size = steps.length;
-
         return {
-          action: store.get('action'),
-          controlled: store.get('controlled'),
-          index: index,
-          lifecycle: store.get('lifecycle'),
-          size: size,
-          status: store.get('status')
+          action: store.get('action') || '',
+          controlled: store.get('controlled') || false,
+          index: parseInt(store.get('index'), 10),
+          lifecycle: store.get('lifecycle') || '',
+          size: store.get('size') || 0,
+          status: store.get('status') || ''
         };
       }
     }, {
-      key: 'getNextState',
+      key: "getNextState",
       value: function getNextState(state) {
         var force = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
-        var _getState = this.getState(),
-            action = _getState.action,
-            controlled = _getState.controlled,
-            index = _getState.index,
-            size = _getState.size,
-            status = _getState.status;
+        var _this$getState10 = this.getState(),
+            action = _this$getState10.action,
+            controlled = _this$getState10.controlled,
+            index = _this$getState10.index,
+            size = _this$getState10.size,
+            status = _this$getState10.status;
 
         var newIndex = is.number(state.index) ? state.index : index;
         var nextIndex = controlled && !force ? index : Math.min(Math.max(newIndex, 0), size);
-
         return {
           action: state.action || action,
+          controlled: controlled,
           index: nextIndex,
           lifecycle: state.lifecycle || LIFECYCLE.INIT,
+          size: state.size || size,
           status: nextIndex === size ? STATUS.FINISHED : state.status || status
         };
       }
     }, {
-      key: 'hasUpdatedState',
+      key: "hasUpdatedState",
       value: function hasUpdatedState(oldState) {
         var before = JSON.stringify(oldState);
         var after = JSON.stringify(this.getState());
-
         return before !== after;
       }
     }, {
-      key: 'getSteps',
+      key: "getSteps",
       value: function getSteps() {
         var steps = data.get('steps');
-
         return Array.isArray(steps) ? steps : [];
       }
     }, {
-      key: 'getHelpers',
+      key: "getHelpers",
       value: function getHelpers() {
         return {
-          start: this.start,
-          stop: this.stop,
-          restart: this.restart,
-          reset: this.reset,
           prev: this.prev,
           next: this.next,
           go: this.go,
-          index: this.index,
           close: this.close,
           skip: this.skip,
+          reset: this.reset,
           info: this.info
         };
       }
     }]);
+
     return Store;
   }();
-
-  var _initialiseProps = function _initialiseProps() {
-    var _this = this;
-
-    this.setSteps = function (steps) {
-      var _getState2 = _this.getState(),
-          size = _getState2.size,
-          status = _getState2.status;
-
-      data.set('steps', steps);
-
-      if (status === STATUS.WAITING && !size && steps.length) {
-        _this.setState({ status: STATUS.RUNNING });
-      }
-    };
-
-    this.update = function (state) {
-      if (!hasValidKeys(state, validKeys)) {
-        throw new Error('state is not valid');
-      }
-
-      _this.setState(_extends({}, _this.getNextState(_extends({}, _this.getState(), state, {
-        action: state.action || ACTIONS.UPDATE
-      }), true)));
-    };
-
-    this.steps = function (nextSteps) {
-      if (!is.array(nextSteps)) return;
-
-      _this.setSteps(nextSteps);
-    };
-
-    this.start = function (nextIndex) {
-      var _getState3 = _this.getState(),
-          index = _getState3.index,
-          size = _getState3.size;
-
-      _this.setState(_extends({}, _this.getNextState({
-        action: ACTIONS.START,
-        index: is.number(nextIndex) ? nextIndex : index
-      }, true), {
-        status: size ? STATUS.RUNNING : STATUS.WAITING
-      }));
-    };
-
-    this.stop = function () {
-      var advance = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
-
-      var _getState4 = _this.getState(),
-          index = _getState4.index,
-          status = _getState4.status;
-
-      if ([STATUS.FINISHED, STATUS.SKIPPED].indexOf(status) !== -1) return;
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.STOP, index: index + (advance ? 1 : 0) }), {
-        status: STATUS.PAUSED
-      }));
-    };
-
-    this.restart = function () {
-      var _getState5 = _this.getState(),
-          controlled = _getState5.controlled;
-
-      if (controlled) return;
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.RESTART, index: 0 }), {
-        status: STATUS.RUNNING
-      }));
-    };
-
-    this.reset = function () {
-      var _getState6 = _this.getState(),
-          controlled = _getState6.controlled;
-
-      if (controlled) return;
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.RESET, index: 0 }), {
-        status: STATUS.READY
-      }));
-    };
-
-    this.prev = function () {
-      var _getState7 = _this.getState(),
-          index = _getState7.index,
-          status = _getState7.status;
-
-      if (status !== STATUS.RUNNING) return;
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.PREV, index: index - 1 })));
-    };
-
-    this.next = function () {
-      var _getState8 = _this.getState(),
-          index = _getState8.index,
-          status = _getState8.status;
-
-      if (status !== STATUS.RUNNING) return;
-
-      _this.setState(_this.getNextState({ action: ACTIONS.NEXT, index: index + 1 }));
-    };
-
-    this.go = function (number) {
-      var _getState9 = _this.getState(),
-          index = _getState9.index,
-          status = _getState9.status;
-
-      if (status !== STATUS.RUNNING) return;
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.GO, index: index + number })));
-    };
-
-    this.index = function (nextIndex) {
-      var _getState10 = _this.getState(),
-          status = _getState10.status;
-
-      if (status !== STATUS.RUNNING) return;
-
-      var step = _this.getSteps()[nextIndex];
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.INDEX, index: nextIndex }), {
-        status: step ? status : STATUS.FINISHED
-      }));
-    };
-
-    this.close = function () {
-      var _getState11 = _this.getState(),
-          index = _getState11.index,
-          status = _getState11.status;
-
-      if (status !== STATUS.RUNNING) return;
-
-      _this.setState(_extends({}, _this.getNextState({ action: ACTIONS.CLOSE, index: index + 1 })));
-    };
-
-    this.skip = function () {
-      var _getState12 = _this.getState(),
-          status = _getState12.status;
-
-      if (status !== STATUS.RUNNING) return;
-
-      _this.setState({
-        action: ACTIONS.SKIP,
-        lifecycle: LIFECYCLE.INIT,
-        status: STATUS.SKIPPED
-      });
-    };
-
-    this.info = function () {
-      return _this.getState();
-    };
-  };
 
   return new Store(props);
 }
@@ -606,6 +753,7 @@ function createStore(props) {
  * @param {HTMLElement} element - The target element
  * @returns {Object}
  */
+
 function getClientRect(element) {
   if (!element) {
     return {};
@@ -613,16 +761,15 @@ function getClientRect(element) {
 
   return element.getBoundingClientRect();
 }
-
 /**
  * Helper function to get the browser-normalized "document height"
  * @returns {Number}
  */
+
 function getDocumentHeight() {
   var _document = document,
       body = _document.body,
       html = _document.documentElement;
-
 
   if (!body || !html) {
     return 0;
@@ -630,6 +777,29 @@ function getDocumentHeight() {
 
   return Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
 }
+/**
+ * Find and return the target DOM element based on a step's 'target'.
+ *
+ * @private
+ * @param {string|HTMLElement} element
+ *
+ * @returns {HTMLElement|null}
+ */
+
+function getElement(element) {
+  if (typeof element === 'string') {
+    return element ? document.querySelector(element) : null;
+  }
+
+  return element;
+}
+/**
+ *  Get computed style property
+ *
+ * @param {HTMLElement} el
+ *
+ * @returns {Object}
+ */
 
 function getStyleComputedProperty(el) {
   if (!el || el.nodeType !== 1) {
@@ -638,17 +808,91 @@ function getStyleComputedProperty(el) {
 
   return getComputedStyle(el);
 }
+/**
+ * Get scroll parent with fix
+ *
+ * @param {HTMLElement} element
+ * @param {boolean} skipFix
+ *
+ * @returns {*}
+ */
 
-function hasCustomScrollParent(element) {
-  if (!element) {
-    return false;
+function getScrollParent(element, skipFix) {
+  var parent = scrollParent(element);
+
+  if (parent.isSameNode(scrollDoc())) {
+    return scrollDoc();
   }
-  return getScrollParent(element) !== scrollDoc();
+
+  var hasScrolling = parent.scrollHeight > parent.offsetHeight;
+
+  if (!hasScrolling && !skipFix) {
+    parent.style.overflow = 'initial';
+    return scrollDoc();
+  }
+
+  return parent;
 }
+/**
+ * Check if the element has custom scroll parent
+ *
+ * @param {HTMLElement} element
+ * @param {boolean} skipFix
+ *
+ * @returns {boolean}
+ */
+
+function hasCustomScrollParent(element, skipFix) {
+  if (!element) return false;
+  var parent = getScrollParent(element, skipFix);
+  return !parent.isSameNode(scrollDoc());
+}
+/**
+ * Check if the element has custom offset parent
+ *
+ * @param {HTMLElement} element
+ *
+ * @returns {boolean}
+ */
 
 function hasCustomOffsetParent(element) {
   return element.offsetParent !== document.body;
 }
+/**
+ * Check if the element is visible
+ *
+ * @param {HTMLElement} element
+ *
+ * @returns {boolean}
+ */
+
+function isElementVisible(element) {
+  if (!element) return false;
+  var parentElement = element;
+
+  while (parentElement) {
+    if (parentElement === document.body) break;
+
+    if (parentElement instanceof HTMLElement) {
+      var _getComputedStyle = getComputedStyle(parentElement),
+          display = _getComputedStyle.display,
+          visibility = _getComputedStyle.visibility;
+
+      if (display === 'none' || visibility === 'hidden') {
+        return false;
+      }
+    }
+
+    parentElement = parentElement.parentNode;
+  }
+
+  return true;
+}
+/**
+ * Check if the element is fixed
+ * @param {HTMLElement} el
+ * @returns {boolean}
+ */
 
 function isFixed(el) {
   if (!el || !(el instanceof HTMLElement)) {
@@ -656,7 +900,6 @@ function isFixed(el) {
   }
 
   var nodeName = el.nodeName;
-
 
   if (nodeName === 'BODY' || nodeName === 'HTML') {
     return false;
@@ -668,75 +911,63 @@ function isFixed(el) {
 
   return isFixed(el.parentNode);
 }
+/**
+ * Find and return the target DOM element based on a step's 'target'.
+ *
+ * @private
+ * @param {string|HTMLElement} element
+ * @param {number} offset
+ * @param {boolean} skipFix
+ *
+ * @returns {HTMLElement|undefined}
+ */
 
+function getElementPosition(element, offset, skipFix) {
+  var elementRect = getClientRect(element);
+  var parent = getScrollParent(element, skipFix);
+  var hasScrollParent = hasCustomScrollParent(element, skipFix);
+  var top = elementRect.top + (!hasScrollParent && !isFixed(element) ? parent.scrollTop : 0);
+  return Math.floor(top - offset);
+}
 /**
  * Get the scrollTop position
  *
  * @param {HTMLElement} element
  * @param {number} offset
+ * @param {boolean} skipFix
  *
  * @returns {number}
  */
-function getScrollTo(element, offset) {
+
+function getScrollTo(element, offset, skipFix) {
   if (!element) {
     return 0;
   }
 
-  var parent = getScrollParent(element);
+  var parent = scrollParent(element);
   var top = element.offsetTop;
 
-  if (hasCustomScrollParent(element) && !hasCustomOffsetParent(element)) {
+  if (hasCustomScrollParent(element, skipFix) && !hasCustomOffsetParent(element)) {
     top -= parent.offsetTop;
   }
 
   return Math.floor(top - offset);
 }
-
 /**
- * Find and return the target DOM element based on a step's 'target'.
- *
- * @private
- * @param {string|HTMLElement} element
- *
- * @returns {HTMLElement|undefined}
+ * Scroll to position
+ * @param {number} value
+ * @param {HTMLElement} element
+ * @returns {Promise<*>}
  */
-function getElement(element) {
-  if (typeof element !== 'string') {
-    return element;
-  }
-
-  return element ? document.querySelector(element) : null;
-}
-
-/**
- * Find and return the target DOM element based on a step's 'target'.
- *
- * @private
- * @param {string|HTMLElement} element
- * @param {number} offset
- *
- * @returns {HTMLElement|undefined}
- */
-function getElementPosition(element, offset) {
-  var elementRect = getClientRect(element);
-  var scrollParent = getScrollParent(element);
-  var hasScrollParent = hasCustomScrollParent(element);
-
-  var top = elementRect.top + (!hasScrollParent && !isFixed(element) ? scrollParent.scrollTop : 0);
-
-  return Math.floor(top - offset);
-}
 
 function scrollTo(value) {
   var element = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : scrollDoc();
-
   return new Promise(function (resolve, reject) {
     var scrollTop = element.scrollTop;
-
-
     var limit = value > scrollTop ? value - scrollTop : scrollTop - value;
-
-    scroll.top(element, value, { duration: limit < 100 ? 50 : 300 }, function (error) {
+    scroll.top(element, value, {
+      duration: limit < 100 ? 50 : 300
+    }, function (error) {
       if (error && error.message !== 'Element already at target scroll position') {
         return reject(error);
       }
@@ -745,6 +976,51 @@ function scrollTo(value) {
     });
   });
 }
+
+function createChainableTypeChecker(validate) {
+  function checkType(isRequired, props, propName, componentName, location, propFullName) {
+    var componentNameSafe = componentName || '<<anonymous>>';
+    var propFullNameSafe = propFullName || propName;
+    /* istanbul ignore else */
+
+    if (props[propName] == null) {
+      if (isRequired) {
+        return new Error("Required ".concat(location, " `").concat(propFullNameSafe, "` was not specified in `").concat(componentNameSafe, "`."));
+      }
+
+      return null;
+    }
+
+    for (var _len = arguments.length, args = new Array(_len > 6 ? _len - 6 : 0), _key = 6; _key < _len; _key++) {
+      args[_key - 6] = arguments[_key];
+    }
+
+    return validate.apply(void 0, [props, propName, componentNameSafe, location, propFullNameSafe].concat(args));
+  }
+
+  var chainedCheckType = checkType.bind(null, false);
+  chainedCheckType.isRequired = checkType.bind(null, true);
+  return chainedCheckType;
+}
+
+var componentTypeWithRefs = createChainableTypeChecker(function (props, propName, componentName, location, propFullName) {
+  var propValue = props[propName];
+  var Component = propValue;
+
+  if (!React.isValidElement(propValue) && isValidElementType(propValue)) {
+    var ownProps = {
+      ref: function ref() {},
+      step: {}
+    };
+    Component = React.createElement(Component, ownProps);
+  }
+
+  if (is.string(propValue) || is.number(propValue) || !isValidElementType(propValue) || ![Element, ForwardRef].includes(typeOf(Component))) {
+    return new Error("Invalid ".concat(location, " `").concat(propFullName, "` supplied to `").concat(componentName, "`. Expected a React class or forwardRef."));
+  }
+
+  return undefined;
+});
 
 var defaultOptions = {
   arrowColor: '#fff',
@@ -756,31 +1032,28 @@ var defaultOptions = {
   textColor: '#333',
   zIndex: 100
 };
-
-var buttonReset = {
+var buttonBase = {
   backgroundColor: 'transparent',
   border: 0,
   borderRadius: 0,
   color: '#555',
   cursor: 'pointer',
+  fontSize: 16,
   lineHeight: 1,
   padding: 8,
   WebkitAppearance: 'none'
 };
-
 var spotlight = {
   borderRadius: 4,
   position: 'absolute'
 };
-
-function getStyles(stepStyles) {
+function getStyles() {
+  var stepStyles = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var options = deepmerge(defaultOptions, stepStyles.options || {});
   var width = 290;
 
   if (window.innerWidth > 480) {
     width = 380;
-  } else if (window.innerWidth > 768) {
-    width = 490;
   }
 
   if (options.width) {
@@ -800,9 +1073,8 @@ function getStyles(stepStyles) {
     top: 0,
     zIndex: options.zIndex
   };
-
   var defaultStyles = {
-    beacon: _extends({}, buttonReset, {
+    beacon: _objectSpread({}, buttonBase, {
       display: 'inline-block',
       height: options.beaconSize,
       position: 'relative',
@@ -824,8 +1096,8 @@ function getStyles(stepStyles) {
     },
     beaconOuter: {
       animation: 'joyride-beacon-outer 1.2s infinite ease-in-out',
-      backgroundColor: 'rgba(' + hexToRGB(options.primaryColor).join(',') + ', 0.2)',
-      border: '2px solid ' + options.primaryColor,
+      backgroundColor: "rgba(".concat(hexToRGB(options.primaryColor).join(','), ", 0.2)"),
+      border: "2px solid ".concat(options.primaryColor),
       borderRadius: '50%',
       boxSizing: 'border-box',
       display: 'block',
@@ -854,7 +1126,7 @@ function getStyles(stepStyles) {
     },
     tooltipTitle: {
       fontSize: 18,
-      margin: '0 0 10px 0'
+      margin: 0
     },
     tooltipContent: {
       padding: '20px 10px'
@@ -862,20 +1134,23 @@ function getStyles(stepStyles) {
     tooltipFooter: {
       alignItems: 'center',
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       marginTop: 15
     },
-    buttonNext: _extends({}, buttonReset, {
+    tooltipFooterSpacer: {
+      flex: 1
+    },
+    buttonNext: _objectSpread({}, buttonBase, {
       backgroundColor: options.primaryColor,
       borderRadius: 4,
       color: '#fff'
     }),
-    buttonBack: _extends({}, buttonReset, {
+    buttonBack: _objectSpread({}, buttonBase, {
       color: options.primaryColor,
       marginLeft: 'auto',
       marginRight: 5
     }),
-    buttonClose: _extends({}, buttonReset, {
+    buttonClose: _objectSpread({}, buttonBase, {
       color: options.textColor,
       height: 14,
       padding: 15,
@@ -884,33 +1159,35 @@ function getStyles(stepStyles) {
       top: 0,
       width: 14
     }),
-    buttonSkip: _extends({}, buttonReset, {
+    buttonSkip: _objectSpread({}, buttonBase, {
       color: options.textColor,
       fontSize: 14
     }),
-    overlay: _extends({}, overlay, {
+    overlay: _objectSpread({}, overlay, {
       backgroundColor: options.overlayColor,
       mixBlendMode: 'hard-light'
     }),
-    overlayLegacy: _extends({}, overlay),
-    spotlight: _extends({}, spotlight, {
+    overlayLegacy: _objectSpread({}, overlay),
+    overlayLegacyCenter: _objectSpread({}, overlay, {
+      backgroundColor: options.overlayColor
+    }),
+    spotlight: _objectSpread({}, spotlight, {
       backgroundColor: 'gray'
     }),
-    spotlightLegacy: _extends({}, spotlight, {
-      boxShadow: '0 0 0 9999px ' + options.overlayColor + ', ' + options.spotlightShadow
+    spotlightLegacy: _objectSpread({}, spotlight, {
+      boxShadow: "0 0 0 9999px ".concat(options.overlayColor, ", ").concat(options.spotlightShadow)
     }),
     floaterStyles: {
       arrow: {
         color: options.arrowColor
       },
-      floater: {
+      options: {
         zIndex: options.zIndex
       }
     },
     options: options
   };
-
-  return deepmerge(defaultStyles, stepStyles || {});
+  return deepmerge(defaultStyles, stepStyles);
 }
 
 var DEFAULTS = {
@@ -930,7 +1207,7 @@ var DEFAULTS = {
     close: 'Close',
     last: 'Last',
     next: 'Next',
-    open: 'Open',
+    open: 'Open the dialog',
     skip: 'Skip'
   },
   step: {
@@ -940,6 +1217,48 @@ var DEFAULTS = {
   }
 };
 
+function getTourProps(props) {
+  var sharedTourProps = ['beaconComponent', 'disableCloseOnEsc', 'disableOverlay', 'disableOverlayClose', 'disableScrolling', 'disableScrollParentFix', 'floaterProps', 'hideBackButton', 'locale', 'showProgress', 'showSkipButton', 'spotlightClicks', 'spotlightPadding', 'styles', 'tooltipComponent'];
+  return Object.keys(props).filter(function (d) {
+    return sharedTourProps.includes(d);
+  }).reduce(function (acc, i) {
+    acc[i] = props[i]; //eslint-disable-line react/destructuring-assignment
+
+    return acc;
+  }, {});
+}
+
+function getMergedStep(step, props) {
+  if (!step) return null;
+  var mergedStep = deepmerge.all([getTourProps(props), DEFAULTS.step, step], {
+    isMergeableObject: is.plainObject
+  });
+  var mergedStyles = getStyles(deepmerge(props.styles || {}, step.styles || {}));
+  var scrollParent$$1 = hasCustomScrollParent(getElement(step.target), mergedStep.disableScrollParentFix);
+  var floaterProps = deepmerge.all([props.floaterProps || {}, DEFAULTS.floaterProps, mergedStep.floaterProps || {}]); // Set react-floater props
+
+  floaterProps.offset = mergedStep.offset;
+  floaterProps.styles = deepmerge(floaterProps.styles || {}, mergedStyles.floaterStyles || {});
+  delete mergedStyles.floaterStyles;
+
+  if (!mergedStep.disableScrolling) {
+    floaterProps.offset += props.spotlightPadding || step.spotlightPadding || 0;
+  }
+
+  if (step.placementBeacon) {
+    floaterProps.wrapperOptions.placement = step.placementBeacon;
+  }
+
+  if (scrollParent$$1) {
+    floaterProps.options.preventOverflow.boundariesElement = 'window';
+  }
+
+  return _objectSpread({}, mergedStep, {
+    locale: deepmerge.all([DEFAULTS.locale, props.locale || {}, mergedStep.locale || {}]),
+    floaterProps: floaterProps,
+    styles: mergedStyles
+  });
+}
 /**
  * Validate if a step is valid
  *
@@ -948,6 +1267,7 @@ var DEFAULTS = {
  *
  * @returns {boolean} - True if the step is valid, false otherwise
  */
+
 function validateStep(step) {
   var debug = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
@@ -973,7 +1293,6 @@ function validateStep(step) {
 
   return true;
 }
-
 /**
  * Validate if steps is valid
  *
@@ -982,6 +1301,7 @@ function validateStep(step) {
  *
  * @returns {boolean} - True if the steps are valid, false otherwise
  */
+
 function validateSteps(steps) {
   var debug = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
 
@@ -992,7 +1312,6 @@ function validateSteps(steps) {
       warn: true,
       debug: debug
     });
-
     return false;
   }
 
@@ -1001,177 +1320,168 @@ function validateSteps(steps) {
   });
 }
 
-function getTourProps(props) {
-  var sharedTourProps = ['beaconComponent', 'disableCloseOnEsc', 'disableOverlay', 'disableOverlayClose', 'disableScrolling', 'floaterProps', 'hideBackButton', 'locale', 'showProgress', 'showSkipButton', 'spotlightClicks', 'spotlightPadding', 'styles', 'tooltipComponent'];
+var Scope = function Scope(_element) {
+  var _this = this;
 
-  return Object.keys(props).filter(function (d) {
-    return sharedTourProps.indexOf(d) !== -1;
-  }).reduce(function (acc, i) {
-    acc[i] = props[i]; //eslint-disable-line react/destructuring-assignment
+  var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
 
-    return acc;
-  }, {});
-}
+  _classCallCheck(this, Scope);
 
-function getMergedStep(step, props) {
-  if (!step) return undefined;
+  _defineProperty(this, "element", void 0);
 
-  var mergedStep = deepmerge.all([getTourProps(props), DEFAULTS.step, step]);
-  var mergedStyles = getStyles(deepmerge(props.styles || {}, step.styles || {}));
-  var scrollParent = hasCustomScrollParent(getElement(step.target));
-  var floaterProps = deepmerge.all([props.floaterProps || {}, DEFAULTS.floaterProps, mergedStep.floaterProps || {}]);
+  _defineProperty(this, "options", void 0);
 
-  // Set react-floater props
-  floaterProps.offset = mergedStep.offset;
-  floaterProps.styles = deepmerge(floaterProps.styles || {}, mergedStyles.floaterStyles || {});
-
-  delete mergedStyles.floaterStyles;
-
-  if (mergedStep.floaterProps && mergedStep.floaterProps.offset) {
-    floaterProps.offset = mergedStep.floaterProps.offset;
-  }
-
-  if (!mergedStep.disableScrolling) {
-    floaterProps.offset += props.spotlightPadding || step.spotlightPadding || 0;
-  }
-
-  if (step.placementBeacon) {
-    floaterProps.wrapperOptions.placement = step.placementBeacon;
-  }
-
-  if (scrollParent) {
-    floaterProps.options.preventOverflow.boundariesElement = 'window';
-  }
-
-  return _extends({}, mergedStep, {
-    locale: deepmerge.all([DEFAULTS.locale, props.locale || {}, mergedStep.locale || {}]),
-    floaterProps: floaterProps,
-    styles: mergedStyles
+  _defineProperty(this, "canBeTabbed", function (element) {
+    var tabIndex = element.tabIndex;
+    if (tabIndex === null || tabIndex < 0) tabIndex = undefined;
+    var isTabIndexNaN = isNaN(tabIndex);
+    return !isTabIndexNaN && _this.canHaveFocus(element, true);
   });
-}
 
-var EVENTS = {
-  TOUR_START: 'tour:start',
-  STEP_BEFORE: 'step:before',
-  BEACON: 'beacon',
-  TOOLTIP: 'tooltip',
-  TOOLTIP_CLOSE: 'close',
-  STEP_AFTER: 'step:after',
-  TOUR_END: 'tour:end',
-  TOUR_STATUS: 'tour:status',
-  TARGET_NOT_FOUND: 'error:target_not_found',
-  ERROR: 'error'
+  _defineProperty(this, "canHaveFocus", function (element, isTabIndexNotNaN) {
+    var validTabNodes = /input|select|textarea|button|object/;
+    var nodeName = element.nodeName.toLowerCase();
+    var res = validTabNodes.test(nodeName) && !element.getAttribute('disabled') || (nodeName === 'a' ? element.getAttribute('href') || isTabIndexNotNaN : isTabIndexNotNaN);
+    return res && _this.isVisible(element);
+  });
+
+  _defineProperty(this, "findValidTabElements", function () {
+    return [].slice.call(_this.element.querySelectorAll('*'), 0).filter(_this.canBeTabbed);
+  });
+
+  _defineProperty(this, "handleKeyDown", function (e) {
+    var _this$options$keyCode = _this.options.keyCode,
+        keyCode = _this$options$keyCode === void 0 ? 9 : _this$options$keyCode;
+    /* istanbul ignore else */
+
+    if (e.keyCode === keyCode) {
+      _this.interceptTab(e);
+    }
+  });
+
+  _defineProperty(this, "interceptTab", function (event) {
+    event.preventDefault();
+
+    var elements = _this.findValidTabElements();
+
+    var shiftKey = event.shiftKey;
+
+    if (!elements.length) {
+      return;
+    }
+
+    var x = elements.indexOf(document.activeElement);
+
+    if (x === -1 || !shiftKey && x + 1 === elements.length) {
+      x = 0;
+    } else if (shiftKey && x === 0) {
+      x = elements.length - 1;
+    } else {
+      x += shiftKey ? -1 : 1;
+    }
+
+    elements[x].focus();
+  });
+
+  _defineProperty(this, "isHidden", function (element) {
+    var noSize = element.offsetWidth <= 0 && element.offsetHeight <= 0;
+    var style = window.getComputedStyle(element);
+    if (noSize && !element.innerHTML) return true;
+    return noSize && style.getPropertyValue('overflow') !== 'visible' || style.getPropertyValue('display') === 'none';
+  });
+
+  _defineProperty(this, "isVisible", function (element) {
+    var parentElement = element;
+
+    while (parentElement) {
+      /* istanbul ignore else */
+      if (parentElement instanceof HTMLElement) {
+        if (parentElement === document.body) break;
+        /* istanbul ignore else */
+
+        if (_this.isHidden(parentElement)) return false;
+        parentElement = parentElement.parentNode;
+      }
+    }
+
+    return true;
+  });
+
+  _defineProperty(this, "removeScope", function () {
+    window.removeEventListener('keydown', _this.handleKeyDown);
+  });
+
+  _defineProperty(this, "setFocus", function () {
+    var selector = _this.options.selector;
+    if (!selector) return;
+
+    var target = _this.element.querySelector(selector);
+    /* istanbul ignore else */
+
+
+    if (target) {
+      target.focus();
+    }
+  });
+
+  if (!(_element instanceof HTMLElement)) {
+    throw new TypeError('Invalid parameter: element must be an HTMLElement');
+  }
+
+  this.element = _element;
+  this.options = options;
+  window.addEventListener('keydown', this.handleKeyDown, false);
+  this.setFocus();
 };
 
-var validTabNodes = /input|select|textarea|button|object/;
-var TAB_KEY = 9;
-var modalElement = null;
-
-function isHidden(element) {
-  var noSize = element.offsetWidth <= 0 && element.offsetHeight <= 0;
-
-  if (noSize && !element.innerHTML) return true;
-
-  var style = window.getComputedStyle(element);
-  return noSize ? style.getPropertyValue('overflow') !== 'visible' : style.getPropertyValue('display') === 'none';
-}
-
-function isVisible(element) {
-  var parentElement = element;
-  while (parentElement) {
-    if (parentElement === document.body) break;
-    if (isHidden(parentElement)) return false;
-    parentElement = parentElement.parentNode;
-  }
-  return true;
-}
-
-function canHaveFocus(element, isTabIndexNotNaN) {
-  var nodeName = element.nodeName.toLowerCase();
-  var res = validTabNodes.test(nodeName) && !element.disabled || (nodeName === 'a' ? element.href || isTabIndexNotNaN : isTabIndexNotNaN);
-  return res && isVisible(element);
-}
-
-function canBeTabbed(element) {
-  var tabIndex = element.getAttribute('tabindex');
-  if (tabIndex === null) tabIndex = undefined;
-  var isTabIndexNaN = isNaN(tabIndex);
-  return (isTabIndexNaN || tabIndex >= 0) && canHaveFocus(element, !isTabIndexNaN);
-}
-
-function findValidTabElements(element) {
-  return [].slice.call(element.querySelectorAll('*'), 0).filter(canBeTabbed);
-}
-
-function interceptTab(node, event) {
-  var elements = findValidTabElements(node);
-  var shiftKey = event.shiftKey;
-
-
-  if (!elements.length) {
-    event.preventDefault();
-    return;
-  }
-
-  var x = elements.indexOf(document.activeElement);
-
-  if (x === -1 || !shiftKey && x + 1 === elements.length) {
-    x = 0;
-  } else {
-    x += shiftKey ? -1 : 1;
-  }
-
-  event.preventDefault();
-
-  elements[x].focus();
-}
-
-function handleKeyDown(e) {
-  if (!modalElement) {
-    return;
-  }
-
-  if (e.keyCode === TAB_KEY) {
-    interceptTab(modalElement, e);
-  }
-}
-
-function setScope(element) {
-  modalElement = element;
-
-  window.addEventListener('keydown', handleKeyDown, false);
-}
-
-function removeScope() {
-  modalElement = null;
-
-  window.removeEventListener('keydown', handleKeyDown);
-}
-
-var JoyrideBeacon = function (_React$Component) {
-  inherits(JoyrideBeacon, _React$Component);
+var JoyrideBeacon =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(JoyrideBeacon, _React$Component);
 
   function JoyrideBeacon(props) {
-    classCallCheck(this, JoyrideBeacon);
+    var _this;
 
-    var _this = possibleConstructorReturn(this, (JoyrideBeacon.__proto__ || Object.getPrototypeOf(JoyrideBeacon)).call(this, props));
+    _classCallCheck(this, JoyrideBeacon);
+
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(JoyrideBeacon).call(this, props));
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setBeaconRef", function (c) {
+      _this.beacon = c;
+    });
 
     if (!props.beaconComponent) {
       var head = document.head || document.getElementsByTagName('head')[0];
       var style = document.createElement('style');
-      var css = '\n@keyframes joyride-beacon-inner {\n  20% {\n    opacity: 0.9;\n  }\n\n  90% {\n    opacity: 0.7;\n  }\n}\n\n@keyframes joyride-beacon-outer {\n  0% {\n    transform: scale(1);\n  }\n\n  45% {\n    opacity: 0.7;\n    transform: scale(0.75);\n  }\n\n  100% {\n    opacity: 0.9;\n    transform: scale(1);\n  }\n}\n      ';
-
+      var css = "\n        @keyframes joyride-beacon-inner {\n          20% {\n            opacity: 0.9;\n          }\n        \n          90% {\n            opacity: 0.7;\n          }\n        }\n        \n        @keyframes joyride-beacon-outer {\n          0% {\n            transform: scale(1);\n          }\n        \n          45% {\n            opacity: 0.7;\n            transform: scale(0.75);\n          }\n        \n          100% {\n            opacity: 0.9;\n            transform: scale(1);\n          }\n        }\n      ";
       style.type = 'text/css';
       style.id = 'joyride-beacon-animation';
       style.appendChild(document.createTextNode(css));
-
       head.appendChild(style);
     }
+
     return _this;
   }
 
-  createClass(JoyrideBeacon, [{
-    key: 'componentWillUnmount',
+  _createClass(JoyrideBeacon, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      if (process.env.NODE_ENV !== 'production') {
+        if (!is.domElement(this.beacon)) {
+          console.warn('beacon is not a valid DOM element'); //eslint-disable-line no-console
+        }
+      }
+
+      setTimeout(function () {
+        if (is.domElement(_this2.beacon)) {
+          _this2.beacon.focus();
+        }
+      }, 0);
+    }
+  }, {
+    key: "componentWillUnmount",
     value: function componentWillUnmount() {
       var style = document.getElementById('joyride-beacon-animation');
 
@@ -1180,60 +1490,58 @@ var JoyrideBeacon = function (_React$Component) {
       }
     }
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
-      var _props = this.props,
-          beaconComponent = _props.beaconComponent,
-          locale = _props.locale,
-          onClickOrHover = _props.onClickOrHover,
-          styles = _props.styles;
-
+      var _this$props = this.props,
+          beaconComponent = _this$props.beaconComponent,
+          locale = _this$props.locale,
+          onClickOrHover = _this$props.onClickOrHover,
+          styles = _this$props.styles;
       var props = {
         'aria-label': locale.open,
         onClick: onClickOrHover,
         onMouseEnter: onClickOrHover,
+        ref: this.setBeaconRef,
         title: locale.open
       };
-      var component = void 0;
+      var component;
 
       if (beaconComponent) {
-        if (React.isValidElement(beaconComponent)) {
-          component = React.cloneElement(beaconComponent, props);
-        } else {
-          component = beaconComponent(props);
-        }
+        var BeaconComponent = beaconComponent;
+        component = React.createElement(BeaconComponent, props);
       } else {
-        component = React.createElement(
-          'button',
-          _extends({
-            key: 'JoyrideBeacon',
-            className: 'joyride-beacon',
-            style: styles.beacon,
-            type: 'button'
-          }, props),
-          React.createElement('span', { style: styles.beaconInner }),
-          React.createElement('span', { style: styles.beaconOuter })
-        );
+        component = React.createElement("button", _extends({
+          key: "JoyrideBeacon",
+          className: "react-joyride__beacon",
+          style: styles.beacon,
+          type: "button",
+          "data-test-id": "button-beacon"
+        }, props), React.createElement("span", {
+          style: styles.beaconInner
+        }), React.createElement("span", {
+          style: styles.beaconOuter
+        }));
       }
 
       return component;
     }
   }]);
+
   return JoyrideBeacon;
 }(React.Component);
 
-JoyrideBeacon.propTypes = {
-  beaconComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element]),
+_defineProperty(JoyrideBeacon, "propTypes", {
+  beaconComponent: componentTypeWithRefs,
   locale: PropTypes.object.isRequired,
   onClickOrHover: PropTypes.func.isRequired,
   styles: PropTypes.object.isRequired
-};
+});
 
 var JoyrideSpotlight = function JoyrideSpotlight(_ref) {
   var styles = _ref.styles;
-  return React.createElement('div', {
-    key: 'JoyrideSpotlight',
-    className: 'joyride-spotlight',
+  return React.createElement("div", {
+    key: "JoyrideSpotlight",
+    className: "react-joyride__spotlight",
     style: styles
   });
 };
@@ -1242,15 +1550,19 @@ JoyrideSpotlight.propTypes = {
   styles: PropTypes.object.isRequired
 };
 
-var Overlay = function (_React$Component) {
-  inherits(Overlay, _React$Component);
+var JoyrideOverlay =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(JoyrideOverlay, _React$Component);
 
-  function Overlay(props) {
-    classCallCheck(this, Overlay);
+  function JoyrideOverlay(props) {
+    var _this;
 
-    var _this = possibleConstructorReturn(this, (Overlay.__proto__ || Object.getPrototypeOf(Overlay)).call(this, props));
+    _classCallCheck(this, JoyrideOverlay);
 
-    _this.handleMouseMove = function (e) {
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(JoyrideOverlay).call(this, props));
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleMouseMove", function (e) {
       var mouseOverSpotlight = _this.state.mouseOverSpotlight;
       var _this$stylesSpotlight = _this.stylesSpotlight,
           height = _this$stylesSpotlight.height,
@@ -1258,8 +1570,6 @@ var Overlay = function (_React$Component) {
           position = _this$stylesSpotlight.position,
           top = _this$stylesSpotlight.top,
           width = _this$stylesSpotlight.width;
-
-
       var offsetY = position === 'fixed' ? e.clientY : e.pageY;
       var offsetX = position === 'fixed' ? e.clientX : e.pageX;
       var inSpotlightHeight = offsetY >= top && offsetY <= top + height;
@@ -1267,35 +1577,41 @@ var Overlay = function (_React$Component) {
       var inSpotlight = inSpotlightWidth && inSpotlightHeight;
 
       if (inSpotlight !== mouseOverSpotlight) {
-        _this.setState({ mouseOverSpotlight: inSpotlight });
+        _this.setState({
+          mouseOverSpotlight: inSpotlight
+        });
       }
-    };
+    });
 
-    _this.handleScroll = function () {
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleScroll", function () {
       var isScrolling = _this.state.isScrolling;
 
-
       if (!isScrolling) {
-        _this.setState({ isScrolling: true, showSpotlight: false });
+        _this.setState({
+          isScrolling: true,
+          showSpotlight: false
+        });
       }
 
       clearTimeout(_this.scrollTimeout);
-
       _this.scrollTimeout = setTimeout(function () {
-        clearTimeout(_this.scrollTimeout);
-        _this.setState({ isScrolling: false, showSpotlight: true });
+        _this.setState({
+          isScrolling: false,
+          showSpotlight: true
+        });
+
         _this.scrollParent.removeEventListener('scroll', _this.handleScroll);
       }, 50);
-    };
+    });
 
-    _this.handleResize = function () {
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleResize", function () {
       clearTimeout(_this.resizeTimeout);
-
       _this.resizeTimeout = setTimeout(function () {
         clearTimeout(_this.resizeTimeout);
+
         _this.forceUpdate();
       }, 100);
-    };
+    });
 
     _this.state = {
       mouseOverSpotlight: false,
@@ -1305,44 +1621,64 @@ var Overlay = function (_React$Component) {
     return _this;
   }
 
-  createClass(Overlay, [{
-    key: 'componentDidMount',
+  _createClass(JoyrideOverlay, [{
+    key: "componentDidMount",
     value: function componentDidMount() {
-      var _props = this.props,
-          disableScrolling = _props.disableScrolling,
-          target = _props.target;
-
+      var _this$props = this.props,
+          debug = _this$props.debug,
+          disableScrolling = _this$props.disableScrolling,
+          disableScrollParentFix = _this$props.disableScrollParentFix,
+          target = _this$props.target;
+      /* istanbul ignore else */
 
       if (!disableScrolling) {
         var element = getElement(target);
-        this.scrollParent = hasCustomScrollParent(element) ? getScrollParent(element) : document;
+        this.scrollParent = getScrollParent(element, disableScrollParentFix);
+        /* istanbul ignore else */
+
+        if (hasCustomScrollParent(element, true)) {
+          log({
+            title: 'step has a custom scroll parent and can cause trouble with scrolling',
+            data: [{
+              key: 'parent',
+              value: this.scrollParent
+            }],
+            debug: debug
+          });
+        }
       }
 
       window.addEventListener('resize', this.handleResize);
     }
   }, {
-    key: 'componentWillReceiveProps',
-    value: function componentWillReceiveProps(nextProps) {
+    key: "componentDidUpdate",
+    value: function componentDidUpdate(prevProps) {
       var _this2 = this;
 
-      var disableScrolling = nextProps.disableScrolling,
-          lifecycle = nextProps.lifecycle,
-          spotlightClicks = nextProps.spotlightClicks;
+      var _this$props2 = this.props,
+          disableScrolling = _this$props2.disableScrolling,
+          lifecycle = _this$props2.lifecycle,
+          spotlightClicks = _this$props2.spotlightClicks;
 
-      var _treeChanges = treeChanges(this.props, nextProps),
+      var _treeChanges = treeChanges(prevProps, this.props),
           changed = _treeChanges.changed,
           changedTo = _treeChanges.changedTo;
+      /* istanbul ignore else */
+
 
       if (!disableScrolling) {
         if (changedTo('lifecycle', LIFECYCLE.TOOLTIP)) {
-          this.scrollParent.addEventListener('scroll', this.handleScroll, { passive: true });
-
+          this.scrollParent.addEventListener('scroll', this.handleScroll, {
+            passive: true
+          });
           setTimeout(function () {
             var isScrolling = _this2.state.isScrolling;
 
-
             if (!isScrolling) {
-              _this2.setState({ showSpotlight: true });
+              _this2.setState({
+                showSpotlight: true
+              });
+
               _this2.scrollParent.removeEventListener('scroll', _this2.handleScroll);
             }
           }, 100);
@@ -1358,13 +1694,12 @@ var Overlay = function (_React$Component) {
       }
     }
   }, {
-    key: 'componentWillUnmount',
+    key: "componentWillUnmount",
     value: function componentWillUnmount() {
       var disableScrolling = this.props.disableScrolling;
-
-
       window.removeEventListener('mousemove', this.handleMouseMove);
       window.removeEventListener('resize', this.handleResize);
+      /* istanbul ignore else */
 
       if (!disableScrolling) {
         clearTimeout(this.scrollTimeout);
@@ -1372,72 +1707,71 @@ var Overlay = function (_React$Component) {
       }
     }
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
-      var _state = this.state,
-          mouseOverSpotlight = _state.mouseOverSpotlight,
-          showSpotlight = _state.showSpotlight;
-      var _props2 = this.props,
-          disableOverlay = _props2.disableOverlay,
-          lifecycle = _props2.lifecycle,
-          onClickOverlay = _props2.onClickOverlay,
-          placement = _props2.placement,
-          styles = _props2.styles;
-
+      var _this$state = this.state,
+          mouseOverSpotlight = _this$state.mouseOverSpotlight,
+          showSpotlight = _this$state.showSpotlight;
+      var _this$props3 = this.props,
+          disableOverlay = _this$props3.disableOverlay,
+          lifecycle = _this$props3.lifecycle,
+          onClickOverlay = _this$props3.onClickOverlay,
+          placement = _this$props3.placement,
+          styles = _this$props3.styles;
 
       if (disableOverlay || lifecycle !== LIFECYCLE.TOOLTIP) {
         return null;
       }
 
-      var stylesOverlay = _extends({
-        cursor: disableOverlay ? 'default' : 'pointer',
+      var baseStyles = styles.overlay;
+      /* istanbul ignore else */
+
+      if (isLegacy()) {
+        baseStyles = placement === 'center' ? styles.overlayLegacyCenter : styles.overlayLegacy;
+      }
+
+      var stylesOverlay = _objectSpread({
+        cursor: 'pointer',
         height: getDocumentHeight(),
         pointerEvents: mouseOverSpotlight ? 'none' : 'auto'
-      }, isLegacy() ? styles.overlayLegacy : styles.overlay);
+      }, baseStyles);
 
-      var spotlight = placement !== 'center' && showSpotlight && React.createElement(JoyrideSpotlight, { styles: this.stylesSpotlight });
+      var spotlight = placement !== 'center' && showSpotlight && React.createElement(JoyrideSpotlight, {
+        styles: this.stylesSpotlight
+      }); // Hack for Safari bug with mix-blend-mode with z-index
 
-      // Hack for Safari bug with mix-blend-mode with z-index
       if (getBrowser() === 'safari') {
         var mixBlendMode = stylesOverlay.mixBlendMode,
             zIndex = stylesOverlay.zIndex,
-            safarOverlay = objectWithoutProperties(stylesOverlay, ['mixBlendMode', 'zIndex']);
+            safarOverlay = _objectWithoutProperties(stylesOverlay, ["mixBlendMode", "zIndex"]);
 
-
-        spotlight = React.createElement(
-          'div',
-          { style: _extends({}, safarOverlay) },
-          spotlight
-        );
+        spotlight = React.createElement("div", {
+          style: _objectSpread({}, safarOverlay)
+        }, spotlight);
         delete stylesOverlay.backgroundColor;
       }
 
-      return React.createElement(
-        'div',
-        {
-          className: 'joyride-overlay',
-          style: stylesOverlay,
-          onClick: onClickOverlay
-        },
-        spotlight
-      );
+      return React.createElement("div", {
+        className: "react-joyride__overlay",
+        style: stylesOverlay,
+        onClick: onClickOverlay
+      }, spotlight);
     }
   }, {
-    key: 'stylesSpotlight',
-    get: function get$$1() {
+    key: "stylesSpotlight",
+    get: function get() {
       var showSpotlight = this.state.showSpotlight;
-      var _props3 = this.props,
-          spotlightClicks = _props3.spotlightClicks,
-          spotlightPadding = _props3.spotlightPadding,
-          styles = _props3.styles,
-          target = _props3.target;
-
+      var _this$props4 = this.props,
+          disableScrollParentFix = _this$props4.disableScrollParentFix,
+          spotlightClicks = _this$props4.spotlightClicks,
+          spotlightPadding = _this$props4.spotlightPadding,
+          styles = _this$props4.styles,
+          target = _this$props4.target;
       var element = getElement(target);
       var elementRect = getClientRect(element);
       var isFixedTarget = isFixed(element);
-      var top = getElementPosition(element, spotlightPadding);
-
-      return _extends({}, isLegacy() ? styles.spotlightLegacy : styles.spotlight, {
+      var top = getElementPosition(element, spotlightPadding, disableScrollParentFix);
+      return _objectSpread({}, isLegacy() ? styles.spotlightLegacy : styles.spotlight, {
         height: Math.round(elementRect.height + spotlightPadding * 2),
         left: Math.round(elementRect.left - spotlightPadding),
         opacity: showSpotlight ? 1 : 0,
@@ -1449,12 +1783,15 @@ var Overlay = function (_React$Component) {
       });
     }
   }]);
-  return Overlay;
+
+  return JoyrideOverlay;
 }(React.Component);
 
-Overlay.propTypes = {
+_defineProperty(JoyrideOverlay, "propTypes", {
+  debug: PropTypes.bool.isRequired,
   disableOverlay: PropTypes.bool.isRequired,
   disableScrolling: PropTypes.bool.isRequired,
+  disableScrollParentFix: PropTypes.bool.isRequired,
   lifecycle: PropTypes.string.isRequired,
   onClickOverlay: PropTypes.func.isRequired,
   placement: PropTypes.string.isRequired,
@@ -1462,197 +1799,183 @@ Overlay.propTypes = {
   spotlightPadding: PropTypes.number,
   styles: PropTypes.object.isRequired,
   target: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired
-};
+});
 
-var CloseBtn = function CloseBtn(_ref) {
+var JoyrideTooltipCloseBtn = function JoyrideTooltipCloseBtn(_ref) {
   var styles = _ref.styles,
-      props = objectWithoutProperties(_ref, ['styles']);
+      props = _objectWithoutProperties(_ref, ["styles"]);
+
   var color = styles.color,
       height = styles.height,
       width = styles.width,
-      style = objectWithoutProperties(styles, ['color', 'height', 'width']);
+      style = _objectWithoutProperties(styles, ["color", "height", "width"]);
 
-
-  return React.createElement(
-    'button',
-    _extends({
-      style: style,
-      type: 'button'
-    }, props),
-    React.createElement(
-      'svg',
-      {
-        width: typeof width === 'number' ? width + 'px' : width,
-        height: typeof height === 'number' ? height + 'px' : height,
-        viewBox: '0 0 18 18',
-        version: '1.1',
-        xmlns: 'http://www.w3.org/2000/svg',
-        preserveAspectRatio: 'xMidYMid'
-      },
-      React.createElement(
-        'g',
-        null,
-        React.createElement('path', {
-          d: 'M8.13911129,9.00268191 L0.171521827,17.0258467 C-0.0498027049,17.248715 -0.0498027049,17.6098394 0.171521827,17.8327545 C0.28204354,17.9443526 0.427188206,17.9998706 0.572051765,17.9998706 C0.71714958,17.9998706 0.862013139,17.9443526 0.972581703,17.8327545 L9.0000937,9.74924618 L17.0276057,17.8327545 C17.1384085,17.9443526 17.2832721,17.9998706 17.4281356,17.9998706 C17.5729992,17.9998706 17.718097,17.9443526 17.8286656,17.8327545 C18.0499901,17.6098862 18.0499901,17.2487618 17.8286656,17.0258467 L9.86135722,9.00268191 L17.8340066,0.973848225 C18.0553311,0.750979934 18.0553311,0.389855532 17.8340066,0.16694039 C17.6126821,-0.0556467968 17.254037,-0.0556467968 17.0329467,0.16694039 L9.00042166,8.25611765 L0.967006424,0.167268345 C0.745681892,-0.0553188426 0.387317931,-0.0553188426 0.165993399,0.167268345 C-0.0553311331,0.390136635 -0.0553311331,0.751261038 0.165993399,0.974176179 L8.13920499,9.00268191 L8.13911129,9.00268191 Z',
-          fill: color
-        })
-      )
-    )
-  );
+  return React.createElement("button", _extends({
+    style: style,
+    type: "button"
+  }, props), React.createElement("svg", {
+    width: typeof width === 'number' ? "".concat(width, "px") : width,
+    height: typeof height === 'number' ? "".concat(height, "px") : height,
+    viewBox: "0 0 18 18",
+    version: "1.1",
+    xmlns: "http://www.w3.org/2000/svg",
+    preserveAspectRatio: "xMidYMid"
+  }, React.createElement("g", null, React.createElement("path", {
+    d: "M8.13911129,9.00268191 L0.171521827,17.0258467 C-0.0498027049,17.248715 -0.0498027049,17.6098394 0.171521827,17.8327545 C0.28204354,17.9443526 0.427188206,17.9998706 0.572051765,17.9998706 C0.71714958,17.9998706 0.862013139,17.9443526 0.972581703,17.8327545 L9.0000937,9.74924618 L17.0276057,17.8327545 C17.1384085,17.9443526 17.2832721,17.9998706 17.4281356,17.9998706 C17.5729992,17.9998706 17.718097,17.9443526 17.8286656,17.8327545 C18.0499901,17.6098862 18.0499901,17.2487618 17.8286656,17.0258467 L9.86135722,9.00268191 L17.8340066,0.973848225 C18.0553311,0.750979934 18.0553311,0.389855532 17.8340066,0.16694039 C17.6126821,-0.0556467968 17.254037,-0.0556467968 17.0329467,0.16694039 L9.00042166,8.25611765 L0.967006424,0.167268345 C0.745681892,-0.0553188426 0.387317931,-0.0553188426 0.165993399,0.167268345 C-0.0553311331,0.390136635 -0.0553311331,0.751261038 0.165993399,0.974176179 L8.13920499,9.00268191 L8.13911129,9.00268191 Z",
+    fill: color
+  }))));
 };
 
-CloseBtn.propTypes = {
+JoyrideTooltipCloseBtn.propTypes = {
   styles: PropTypes.object.isRequired
 };
 
-var JoyrideTooltipContainer = function JoyrideTooltipContainer(_ref) {
-  var continuous = _ref.continuous,
-      backProps = _ref.backProps,
-      closeProps = _ref.closeProps,
-      primaryProps = _ref.primaryProps,
-      skipProps = _ref.skipProps,
-      index = _ref.index,
-      isLastStep = _ref.isLastStep,
-      setTooltipRef = _ref.setTooltipRef,
-      size = _ref.size,
-      step = _ref.step;
-  var content = step.content,
-      hideBackButton = step.hideBackButton,
-      locale = step.locale,
-      showProgress = step.showProgress,
-      showSkipButton = step.showSkipButton,
-      title = step.title,
-      styles = step.styles;
-  var back = locale.back,
-      close = locale.close,
-      last = locale.last,
-      next = locale.next,
-      skip = locale.skip;
+var JoyrideTooltipContainer =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(JoyrideTooltipContainer, _React$Component);
 
-  var output = {
-    primary: close
-  };
+  function JoyrideTooltipContainer() {
+    _classCallCheck(this, JoyrideTooltipContainer);
 
-  if (continuous) {
-    if (isLastStep) {
-      output.primary = last;
-    } else {
-      output.primary = next;
+    return _possibleConstructorReturn(this, _getPrototypeOf(JoyrideTooltipContainer).apply(this, arguments));
+  }
+
+  _createClass(JoyrideTooltipContainer, [{
+    key: "render",
+    value: function render() {
+      var _this$props = this.props,
+          backProps = _this$props.backProps,
+          closeProps = _this$props.closeProps,
+          continuous = _this$props.continuous,
+          index = _this$props.index,
+          isLastStep = _this$props.isLastStep,
+          primaryProps = _this$props.primaryProps,
+          size = _this$props.size,
+          skipProps = _this$props.skipProps,
+          step = _this$props.step,
+          tooltipProps = _this$props.tooltipProps;
+      var content = step.content,
+          hideBackButton = step.hideBackButton,
+          hideCloseButton = step.hideCloseButton,
+          hideFooter = step.hideFooter,
+          showProgress = step.showProgress,
+          showSkipButton = step.showSkipButton,
+          title = step.title,
+          styles = step.styles;
+      var _step$locale = step.locale,
+          back = _step$locale.back,
+          close = _step$locale.close,
+          last = _step$locale.last,
+          next = _step$locale.next,
+          skip = _step$locale.skip;
+      var output = {
+        primary: close
+      };
+
+      if (continuous) {
+        output.primary = isLastStep ? last : next;
+
+        if (showProgress) {
+          output.primary = React.createElement("span", null, output.primary, " (", index + 1, "/", size, ")");
+        }
+      }
+
+      if (showSkipButton && !isLastStep) {
+        output.skip = React.createElement("button", _extends({
+          style: styles.buttonSkip,
+          type: "button",
+          "data-test-id": "button-skip",
+          "aria-live": "off"
+        }, skipProps), skip);
+      }
+
+      if (!hideBackButton && index > 0) {
+        output.back = React.createElement("button", _extends({
+          style: styles.buttonBack,
+          type: "button",
+          "data-test-id": "button-back"
+        }, backProps), back);
+      }
+
+      output.close = !hideCloseButton && React.createElement(JoyrideTooltipCloseBtn, _extends({
+        styles: styles.buttonClose,
+        "data-test-id": "button-close"
+      }, closeProps));
+      return React.createElement("div", _extends({
+        key: "JoyrideTooltip",
+        className: "react-joyride__tooltip",
+        style: styles.tooltip
+      }, tooltipProps), React.createElement("div", {
+        style: styles.tooltipContainer
+      }, title && React.createElement("h4", {
+        style: styles.tooltipTitle,
+        "aria-label": title
+      }, title), React.createElement("div", {
+        style: styles.tooltipContent
+      }, content)), !hideFooter && React.createElement("div", {
+        style: styles.tooltipFooter
+      }, React.createElement("div", {
+        style: styles.tooltipFooterSpacer
+      }, output.skip), output.back, React.createElement("button", _extends({
+        style: styles.buttonNext,
+        type: "button",
+        "data-test-id": "button-primary"
+      }, primaryProps), output.primary)), output.close);
     }
+  }]);
 
-    if (showProgress) {
-      output.primary += ' (' + (index + 1) + '/' + size + ')';
-    }
-  }
+  return JoyrideTooltipContainer;
+}(React.Component);
 
-  if (showSkipButton && !isLastStep) {
-    output.skip = React.createElement(
-      'button',
-      _extends({
-        style: styles.buttonSkip,
-        type: 'button'
-      }, skipProps),
-      skip
-    );
-  }
-
-  if (!hideBackButton && index > 0) {
-    output.back = React.createElement(
-      'button',
-      _extends({
-        style: styles.buttonBack,
-        type: 'button'
-      }, backProps),
-      back
-    );
-  }
-
-  output.close = React.createElement(CloseBtn, _extends({}, closeProps, { styles: styles.buttonClose }));
-
-  return React.createElement(
-    'div',
-    {
-      key: 'JoyrideTooltip',
-      ref: setTooltipRef,
-      style: styles.tooltip
-    },
-    React.createElement(
-      'div',
-      { style: styles.tooltipContainer },
-      output.close,
-      title && React.createElement(
-        'h4',
-        { style: styles.tooltipTitle },
-        title
-      ),
-      !!content && React.createElement(
-        'div',
-        { style: styles.tooltipContent },
-        content
-      )
-    ),
-    React.createElement(
-      'div',
-      { style: styles.tooltipFooter },
-      output.skip,
-      output.back,
-      React.createElement(
-        'button',
-        _extends({
-          style: styles.buttonNext,
-          type: 'button'
-        }, primaryProps),
-        output.primary
-      )
-    )
-  );
-};
-
-JoyrideTooltipContainer.propTypes = {
+_defineProperty(JoyrideTooltipContainer, "propTypes", {
   backProps: PropTypes.object.isRequired,
   closeProps: PropTypes.object.isRequired,
   continuous: PropTypes.bool.isRequired,
   index: PropTypes.number.isRequired,
   isLastStep: PropTypes.bool.isRequired,
   primaryProps: PropTypes.object.isRequired,
-  setTooltipRef: PropTypes.func.isRequired,
   size: PropTypes.number.isRequired,
   skipProps: PropTypes.object.isRequired,
-  step: PropTypes.object.isRequired
-};
+  step: PropTypes.object.isRequired,
+  tooltipProps: PropTypes.object.isRequired
+});
 
-var JoyrideTooltip = function (_React$Component) {
-  inherits(JoyrideTooltip, _React$Component);
+var JoyrideTooltip =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(JoyrideTooltip, _React$Component);
 
   function JoyrideTooltip() {
-    var _ref;
+    var _getPrototypeOf2;
 
-    var _temp, _this, _ret;
+    var _this;
 
-    classCallCheck(this, JoyrideTooltip);
+    _classCallCheck(this, JoyrideTooltip);
 
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
       args[_key] = arguments[_key];
     }
 
-    return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = JoyrideTooltip.__proto__ || Object.getPrototypeOf(JoyrideTooltip)).call.apply(_ref, [this].concat(args))), _this), _this.handleClickBack = function (e) {
+    _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(JoyrideTooltip)).call.apply(_getPrototypeOf2, [this].concat(args)));
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickBack", function (e) {
       e.preventDefault();
       var helpers = _this.props.helpers;
-
-
       helpers.prev();
-    }, _this.handleClickClose = function (e) {
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickClose", function (e) {
       e.preventDefault();
       var helpers = _this.props.helpers;
-
-
       helpers.close();
-    }, _this.handleClickPrimary = function (e) {
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickPrimary", function (e) {
       e.preventDefault();
       var _this$props = _this.props,
           continuous = _this$props.continuous,
           helpers = _this$props.helpers;
-
 
       if (!continuous) {
         helpers.close();
@@ -1660,81 +1983,116 @@ var JoyrideTooltip = function (_React$Component) {
       }
 
       helpers.next();
-    }, _this.handleClickSkip = function (e) {
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickSkip", function (e) {
       e.preventDefault();
       var helpers = _this.props.helpers;
-
-
       helpers.skip();
-    }, _temp), possibleConstructorReturn(_this, _ret);
-  }
+    });
 
-  createClass(JoyrideTooltip, [{
-    key: 'render',
-    value: function render() {
-      var _props = this.props,
-          continuous = _props.continuous,
-          index = _props.index,
-          isLastStep = _props.isLastStep,
-          setTooltipRef = _props.setTooltipRef,
-          size = _props.size,
-          step = _props.step;
-      var content = step.content,
-          locale = step.locale,
-          title = step.title,
-          TooltipComponent = step.tooltipComponent,
-          restStepProps = objectWithoutProperties(step, ['content', 'locale', 'title', 'tooltipComponent']);
-      var back = locale.back,
-          close = locale.close,
-          last = locale.last,
-          next = locale.next,
-          skip = locale.skip;
-
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "getElementsProps", function () {
+      var _this$props2 = _this.props,
+          continuous = _this$props2.continuous,
+          isLastStep = _this$props2.isLastStep,
+          setTooltipRef = _this$props2.setTooltipRef,
+          step = _this$props2.step;
+      var back = getText(step.locale.back);
+      var close = getText(step.locale.close);
+      var last = getText(step.locale.last);
+      var next = getText(step.locale.next);
+      var skip = getText(step.locale.skip);
       var primaryText = continuous ? next : close;
 
       if (isLastStep) {
         primaryText = last;
       }
 
-      var component = void 0;
-      var buttonProps = {
-        backProps: { 'aria-label': back, onClick: this.handleClickBack, role: 'button', title: back },
-        closeProps: { 'aria-label': close, onClick: this.handleClickClose, role: 'button', title: close },
-        primaryProps: { 'aria-label': primaryText, onClick: this.handleClickPrimary, role: 'button', title: primaryText },
-        skipProps: { 'aria-label': skip, onClick: this.handleClickSkip, role: 'button', title: skip }
+      return {
+        backProps: {
+          'aria-label': back,
+          'data-action': 'back',
+          onClick: _this.handleClickBack,
+          role: 'button',
+          title: back
+        },
+        closeProps: {
+          'aria-label': close,
+          'data-action': 'close',
+          onClick: _this.handleClickClose,
+          role: 'button',
+          title: close
+        },
+        primaryProps: {
+          'aria-label': primaryText,
+          'data-action': 'primary',
+          onClick: _this.handleClickPrimary,
+          role: 'button',
+          title: primaryText
+        },
+        skipProps: {
+          'aria-label': skip,
+          'data-action': 'skip',
+          onClick: _this.handleClickSkip,
+          role: 'button',
+          title: skip
+        },
+        tooltipProps: {
+          'aria-modal': true,
+          ref: setTooltipRef,
+          role: 'alertdialog'
+        }
       };
+    });
 
-      if (TooltipComponent) {
-        var renderProps = _extends({}, restStepProps, buttonProps, {
-          content: content,
+    return _this;
+  }
+
+  _createClass(JoyrideTooltip, [{
+    key: "render",
+    value: function render() {
+      var _this$props3 = this.props,
+          continuous = _this$props3.continuous,
+          index = _this$props3.index,
+          isLastStep = _this$props3.isLastStep,
+          size = _this$props3.size,
+          step = _this$props3.step;
+
+      var beaconComponent = step.beaconComponent,
+          tooltipComponent = step.tooltipComponent,
+          cleanStep = _objectWithoutProperties(step, ["beaconComponent", "tooltipComponent"]);
+
+      var component;
+
+      if (tooltipComponent) {
+        var renderProps = _objectSpread({}, this.getElementsProps(), {
           continuous: continuous,
           index: index,
           isLastStep: isLastStep,
-          locale: locale,
-          setTooltipRef: setTooltipRef,
           size: size,
-          title: title
+          step: cleanStep
         });
 
+        var TooltipComponent = tooltipComponent;
         component = React.createElement(TooltipComponent, renderProps);
       } else {
-        component = React.createElement(JoyrideTooltipContainer, _extends({
+        component = React.createElement(JoyrideTooltipContainer, _extends({}, this.getElementsProps(), {
           continuous: continuous,
           index: index,
           isLastStep: isLastStep,
-          setTooltipRef: setTooltipRef,
           size: size,
           step: step
-        }, buttonProps));
+        }));
       }
 
       return component;
     }
   }]);
+
   return JoyrideTooltip;
 }(React.Component);
 
-JoyrideTooltip.propTypes = {
+_defineProperty(JoyrideTooltip, "propTypes", {
   continuous: PropTypes.bool.isRequired,
   helpers: PropTypes.object.isRequired,
   index: PropTypes.number.isRequired,
@@ -1742,19 +2100,23 @@ JoyrideTooltip.propTypes = {
   setTooltipRef: PropTypes.func.isRequired,
   size: PropTypes.number.isRequired,
   step: PropTypes.object.isRequired
-};
+});
 
-var JoyridePortal = function (_React$Component) {
-  inherits(JoyridePortal, _React$Component);
+var JoyridePortal =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(JoyridePortal, _React$Component);
 
   function JoyridePortal(props) {
-    classCallCheck(this, JoyridePortal);
+    var _this;
 
-    var _this = possibleConstructorReturn(this, (JoyridePortal.__proto__ || Object.getPrototypeOf(JoyridePortal)).call(this, props));
+    _classCallCheck(this, JoyridePortal);
 
-    if (!canUseDOM) return possibleConstructorReturn(_this);
-
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(JoyridePortal).call(this, props));
+    if (!canUseDOM) return _possibleConstructorReturn(_this);
     _this.node = document.createElement('div');
+    /* istanbul ignore else */
+
     if (props.id) {
       _this.node.id = props.id;
     }
@@ -1763,8 +2125,8 @@ var JoyridePortal = function (_React$Component) {
     return _this;
   }
 
-  createClass(JoyridePortal, [{
-    key: 'componentDidMount',
+  _createClass(JoyridePortal, [{
+    key: "componentDidMount",
     value: function componentDidMount() {
       if (!canUseDOM) return;
 
@@ -1773,7 +2135,7 @@ var JoyridePortal = function (_React$Component) {
       }
     }
   }, {
-    key: 'componentDidUpdate',
+    key: "componentDidUpdate",
     value: function componentDidUpdate() {
       if (!canUseDOM) return;
 
@@ -1782,7 +2144,7 @@ var JoyridePortal = function (_React$Component) {
       }
     }
   }, {
-    key: 'componentWillUnmount',
+    key: "componentWillUnmount",
     value: function componentWillUnmount() {
       if (!canUseDOM || !this.node) return;
 
@@ -1793,29 +2155,22 @@ var JoyridePortal = function (_React$Component) {
       document.body.removeChild(this.node);
     }
   }, {
-    key: 'renderReact15',
+    key: "renderReact15",
     value: function renderReact15() {
       if (!canUseDOM) return null;
-
       var children = this.props.children;
-
-
       ReactDOM.unstable_renderSubtreeIntoContainer(this, children, this.node);
-
       return null;
     }
   }, {
-    key: 'renderReact16',
+    key: "renderReact16",
     value: function renderReact16() {
       if (!canUseDOM || !isReact16) return null;
-
       var children = this.props.children;
-
-
       return ReactDOM.createPortal(children, this.node);
     }
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
       if (!isReact16) {
         return null;
@@ -1824,56 +2179,70 @@ var JoyridePortal = function (_React$Component) {
       return this.renderReact16();
     }
   }]);
+
   return JoyridePortal;
 }(React.Component);
 
-JoyridePortal.propTypes = {
+_defineProperty(JoyridePortal, "propTypes", {
   children: PropTypes.element,
   id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-};
+});
 
-var JoyrideStep = function (_React$Component) {
-  inherits(JoyrideStep, _React$Component);
+var JoyrideStep =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(JoyrideStep, _React$Component);
 
   function JoyrideStep() {
-    var _ref;
+    var _getPrototypeOf2;
 
-    var _temp, _this, _ret;
+    var _this;
 
-    classCallCheck(this, JoyrideStep);
+    _classCallCheck(this, JoyrideStep);
 
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
       args[_key] = arguments[_key];
     }
 
-    return _ret = (_temp = (_this = possibleConstructorReturn(this, (_ref = JoyrideStep.__proto__ || Object.getPrototypeOf(JoyrideStep)).call.apply(_ref, [this].concat(args))), _this), _this.handleClickHoverBeacon = function (e) {
+    _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(JoyrideStep)).call.apply(_getPrototypeOf2, [this].concat(args)));
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "scope", {
+      removeScope: function removeScope() {}
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickHoverBeacon", function (e) {
       var _this$props = _this.props,
           step = _this$props.step,
           update = _this$props.update;
-
 
       if (e.type === 'mouseenter' && step.event !== 'hover') {
         return;
       }
 
-      update({ lifecycle: LIFECYCLE.TOOLTIP });
-    }, _this.handleClickOverlay = function () {
+      update({
+        lifecycle: LIFECYCLE.TOOLTIP
+      });
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickOverlay", function () {
       var _this$props2 = _this.props,
           helpers = _this$props2.helpers,
           step = _this$props2.step;
 
-
       if (!step.disableOverlayClose) {
         helpers.close();
       }
-    }, _this.setTooltipRef = function (c) {
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setTooltipRef", function (c) {
       _this.tooltip = c;
-    }, _this.setPopper = function (popper, type) {
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setPopper", function (popper, type) {
       var _this$props3 = _this.props,
           action = _this$props3.action,
-          getPopper = _this$props3.getPopper,
+          setPopper = _this$props3.setPopper,
           update = _this$props3.update;
-
 
       if (type === 'wrapper') {
         _this.beaconPopper = popper;
@@ -1881,7 +2250,7 @@ var JoyrideStep = function (_React$Component) {
         _this.tooltipPopper = popper;
       }
 
-      getPopper(popper, type);
+      setPopper(popper, type);
 
       if (_this.beaconPopper && _this.tooltipPopper) {
         update({
@@ -1889,140 +2258,145 @@ var JoyrideStep = function (_React$Component) {
           lifecycle: LIFECYCLE.READY
         });
       }
-    }, _temp), possibleConstructorReturn(_this, _ret);
+    });
+
+    return _this;
   }
 
-  createClass(JoyrideStep, [{
-    key: 'componentDidMount',
+  _createClass(JoyrideStep, [{
+    key: "componentDidMount",
     value: function componentDidMount() {
-      var _props = this.props,
-          debug = _props.debug,
-          lifecycle = _props.lifecycle;
-
-
+      var _this$props4 = this.props,
+          debug = _this$props4.debug,
+          index = _this$props4.index;
       log({
-        title: 'step:' + lifecycle,
-        data: [{ key: 'props', value: this.props }],
+        title: "step:".concat(index),
+        data: [{
+          key: 'props',
+          value: this.props
+        }],
         debug: debug
       });
     }
   }, {
-    key: 'componentWillReceiveProps',
-    value: function componentWillReceiveProps(nextProps) {
-      var _props2 = this.props,
-          action = _props2.action,
-          continuous = _props2.continuous,
-          debug = _props2.debug,
-          index = _props2.index,
-          lifecycle = _props2.lifecycle,
-          step = _props2.step,
-          update = _props2.update;
+    key: "componentDidUpdate",
+    value: function componentDidUpdate(prevProps) {
+      var _this$props5 = this.props,
+          action = _this$props5.action,
+          callback = _this$props5.callback,
+          continuous = _this$props5.continuous,
+          controlled = _this$props5.controlled,
+          debug = _this$props5.debug,
+          index = _this$props5.index,
+          lifecycle = _this$props5.lifecycle,
+          size = _this$props5.size,
+          status = _this$props5.status,
+          step = _this$props5.step,
+          update = _this$props5.update;
 
-      var _treeChanges = treeChanges(this.props, nextProps),
+      var _treeChanges = treeChanges(prevProps, this.props),
           changed = _treeChanges.changed,
+          changedTo = _treeChanges.changedTo,
           changedFrom = _treeChanges.changedFrom;
 
+      var state = {
+        action: action,
+        controlled: controlled,
+        index: index,
+        lifecycle: lifecycle,
+        size: size,
+        status: status
+      };
       var skipBeacon = continuous && action !== ACTIONS.CLOSE && (index > 0 || action === ACTIONS.PREV);
+      var hasStoreChanged = changed('action') || changed('index') || changed('lifecycle') || changed('status');
+      var hasStarted = changedFrom('lifecycle', [LIFECYCLE.TOOLTIP, LIFECYCLE.INIT], LIFECYCLE.INIT);
+      var isAfterAction = changedTo('action', [ACTIONS.NEXT, ACTIONS.PREV, ACTIONS.SKIP, ACTIONS.CLOSE]);
 
-      if (changedFrom('lifecycle', LIFECYCLE.INIT, LIFECYCLE.READY)) {
-        update({ lifecycle: step.disableBeacon || skipBeacon ? LIFECYCLE.TOOLTIP : LIFECYCLE.BEACON });
-      }
-
-      if (changed('index')) {
-        log({
-          title: 'step:' + lifecycle,
-          data: [{ key: 'props', value: this.props }],
-          debug: debug
-        });
-      }
-    }
-  }, {
-    key: 'componentDidUpdate',
-    value: function componentDidUpdate(prevProps) {
-      var _props3 = this.props,
-          action = _props3.action,
-          callback = _props3.callback,
-          controlled = _props3.controlled,
-          index = _props3.index,
-          lifecycle = _props3.lifecycle,
-          size = _props3.size,
-          status = _props3.status,
-          step = _props3.step,
-          update = _props3.update;
-
-      var _treeChanges2 = treeChanges(prevProps, this.props),
-          changed = _treeChanges2.changed,
-          changedTo = _treeChanges2.changedTo,
-          changedFrom = _treeChanges2.changedFrom;
-
-      var state = { action: action, controlled: controlled, index: index, lifecycle: lifecycle, size: size, status: status };
-
-      var isAfterAction = [ACTIONS.NEXT, ACTIONS.PREV, ACTIONS.SKIP, ACTIONS.CLOSE].indexOf(action) !== -1 && changed('action');
-
-      var hasChangedIndex = changed('index') && changedFrom('lifecycle', LIFECYCLE.TOOLTIP, LIFECYCLE.INIT);
-
-      if (!changed('status') && (hasChangedIndex || controlled && isAfterAction)) {
-        callback(_extends({}, state, {
+      if (isAfterAction && (hasStarted || controlled)) {
+        callback(_objectSpread({}, state, {
           index: prevProps.index,
           lifecycle: LIFECYCLE.COMPLETE,
           step: prevProps.step,
           type: EVENTS.STEP_AFTER
         }));
-      }
+      } // There's a step to use, but there's no target in the DOM
 
-      // There's a step to use, but there's no target in the DOM
-      if (step) {
-        var hasRenderedTarget = !!getElement(step.target);
+
+      if (hasStoreChanged && step) {
+        var element = getElement(step.target);
+        var hasRenderedTarget = !!element && isElementVisible(element);
 
         if (hasRenderedTarget) {
-          if (changedFrom('status', STATUS.READY, STATUS.RUNNING) || changed('index')) {
-            callback(_extends({}, state, {
+          if (changedFrom('status', STATUS.READY, STATUS.RUNNING) || changedFrom('lifecycle', LIFECYCLE.INIT, LIFECYCLE.READY)) {
+            callback(_objectSpread({}, state, {
               step: step,
               type: EVENTS.STEP_BEFORE
             }));
           }
-        }
-
-        if (!hasRenderedTarget) {
+        } else {
           console.warn('Target not mounted', step); //eslint-disable-line no-console
-          callback(_extends({}, state, {
+
+          callback(_objectSpread({}, state, {
             type: EVENTS.TARGET_NOT_FOUND,
             step: step
           }));
 
           if (!controlled) {
-            update({ index: index + ([ACTIONS.PREV].indexOf(action) !== -1 ? -1 : 1) });
+            update({
+              index: index + ([ACTIONS.PREV].includes(action) ? -1 : 1)
+            });
           }
         }
       }
 
+      if (changedFrom('lifecycle', LIFECYCLE.INIT, LIFECYCLE.READY)) {
+        update({
+          lifecycle: hideBeacon(step) || skipBeacon ? LIFECYCLE.TOOLTIP : LIFECYCLE.BEACON
+        });
+      }
+
+      if (changed('index')) {
+        log({
+          title: "step:".concat(lifecycle),
+          data: [{
+            key: 'props',
+            value: this.props
+          }],
+          debug: debug
+        });
+      }
       /* istanbul ignore else */
+
+
       if (changedTo('lifecycle', LIFECYCLE.BEACON)) {
-        callback(_extends({}, state, {
+        callback(_objectSpread({}, state, {
           step: step,
           type: EVENTS.BEACON
         }));
       }
 
       if (changedTo('lifecycle', LIFECYCLE.TOOLTIP)) {
-        callback(_extends({}, state, {
+        callback(_objectSpread({}, state, {
           step: step,
           type: EVENTS.TOOLTIP
         }));
-
-        setScope(this.tooltip);
+        this.scope = new Scope(this.tooltip, {
+          selector: '[data-action=primary]'
+        });
+        this.scope.setFocus();
       }
 
-      if (changedFrom('lifecycle', LIFECYCLE.TOOLTIP, LIFECYCLE.INIT)) {
-        removeScope();
-      }
-
-      if (changedTo('lifecycle', LIFECYCLE.INIT)) {
+      if (changedFrom('lifecycle', [LIFECYCLE.TOOLTIP, LIFECYCLE.INIT], LIFECYCLE.INIT)) {
+        this.scope.removeScope();
         delete this.beaconPopper;
         delete this.tooltipPopper;
       }
     }
-
+  }, {
+    key: "componentWillUnmount",
+    value: function componentWillUnmount() {
+      this.scope.removeScope();
+    }
     /**
      * Beacon click/hover event listener
      *
@@ -2030,104 +2404,97 @@ var JoyrideStep = function (_React$Component) {
      */
 
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
-      var _props4 = this.props,
-          continuous = _props4.continuous,
-          controlled = _props4.controlled,
-          debug = _props4.debug,
-          helpers = _props4.helpers,
-          index = _props4.index,
-          lifecycle = _props4.lifecycle,
-          size = _props4.size,
-          step = _props4.step;
-
+      var _this$props6 = this.props,
+          continuous = _this$props6.continuous,
+          debug = _this$props6.debug,
+          helpers = _this$props6.helpers,
+          index = _this$props6.index,
+          lifecycle = _this$props6.lifecycle,
+          size = _this$props6.size,
+          step = _this$props6.step;
       var target = getElement(step.target);
 
       if (!validateStep(step) || !is.domElement(target)) {
         return null;
       }
 
-      return React.createElement(
-        'div',
-        { key: 'JoyrideStep-' + index, className: 'joyride-step' },
-        React.createElement(
-          JoyridePortal,
-          null,
-          React.createElement(Overlay, _extends({}, step, {
-            lifecycle: lifecycle,
-            onClickOverlay: this.handleClickOverlay
-          }))
-        ),
-        React.createElement(
-          Floater,
-          _extends({
-            component: React.createElement(JoyrideTooltip, {
-              continuous: continuous,
-              controlled: controlled,
-              helpers: helpers,
-              index: index,
-              setTooltipRef: this.setTooltipRef,
-              size: size,
-              isLastStep: index + 1 === size,
-              step: step
-            }),
-            debug: debug,
-            getPopper: this.setPopper,
-            id: 'react-joyride:' + index,
-            isPositioned: step.isFixed || isFixed(target),
-            open: this.open,
-            placement: step.placement,
-            target: step.target
-          }, step.floaterProps),
-          React.createElement(JoyrideBeacon, {
-            beaconComponent: step.beaconComponent,
-            locale: step.locale,
-            onClickOrHover: this.handleClickHoverBeacon,
-            styles: step.styles
-          })
-        )
-      );
+      return React.createElement("div", {
+        key: "JoyrideStep-".concat(index),
+        className: "react-joyride__step"
+      }, React.createElement(JoyridePortal, {
+        id: "react-joyride-portal"
+      }, React.createElement(JoyrideOverlay, _extends({}, step, {
+        debug: debug,
+        lifecycle: lifecycle,
+        onClickOverlay: this.handleClickOverlay
+      }))), React.createElement(Floater, _extends({
+        component: React.createElement(JoyrideTooltip, {
+          continuous: continuous,
+          helpers: helpers,
+          index: index,
+          isLastStep: index + 1 === size,
+          setTooltipRef: this.setTooltipRef,
+          size: size,
+          step: step
+        }),
+        debug: debug,
+        getPopper: this.setPopper,
+        id: "react-joyride-step-".concat(index),
+        isPositioned: step.isFixed || isFixed(target),
+        open: this.open,
+        placement: step.placement,
+        target: step.target
+      }, step.floaterProps), React.createElement(JoyrideBeacon, {
+        beaconComponent: step.beaconComponent,
+        locale: step.locale,
+        onClickOrHover: this.handleClickHoverBeacon,
+        styles: step.styles
+      })));
     }
   }, {
-    key: 'open',
-    get: function get$$1() {
-      var _props5 = this.props,
-          step = _props5.step,
-          lifecycle = _props5.lifecycle;
-
-
-      return !!(step.disableBeacon || lifecycle === LIFECYCLE.TOOLTIP);
+    key: "open",
+    get: function get() {
+      var _this$props7 = this.props,
+          step = _this$props7.step,
+          lifecycle = _this$props7.lifecycle;
+      return !!(hideBeacon(step) || lifecycle === LIFECYCLE.TOOLTIP);
     }
   }]);
+
   return JoyrideStep;
 }(React.Component);
 
-JoyrideStep.propTypes = {
+_defineProperty(JoyrideStep, "propTypes", {
   action: PropTypes.string.isRequired,
   callback: PropTypes.func.isRequired,
   continuous: PropTypes.bool.isRequired,
   controlled: PropTypes.bool.isRequired,
   debug: PropTypes.bool.isRequired,
-  getPopper: PropTypes.func.isRequired,
   helpers: PropTypes.object.isRequired,
   index: PropTypes.number.isRequired,
   lifecycle: PropTypes.string.isRequired,
+  setPopper: PropTypes.func.isRequired,
   size: PropTypes.number.isRequired,
   status: PropTypes.string.isRequired,
   step: PropTypes.shape({
-    beaconComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element]),
-    content: isRequiredIf(PropTypes.node, function (props) {
-      return !props.tooltipComponent && !props.title;
-    }),
+    beaconComponent: componentTypeWithRefs,
+    content: PropTypes.node.isRequired,
     disableBeacon: PropTypes.bool,
     disableOverlay: PropTypes.bool,
     disableOverlayClose: PropTypes.bool,
+    disableScrolling: PropTypes.bool,
+    disableScrollParentFix: PropTypes.bool,
     event: PropTypes.string,
     floaterProps: PropTypes.shape({
-      offset: PropTypes.number
+      options: PropTypes.object,
+      styles: PropTypes.object,
+      wrapperOptions: PropTypes.object
     }),
     hideBackButton: PropTypes.bool,
+    hideCloseButton: PropTypes.bool,
+    hideFooter: PropTypes.bool,
     isFixed: PropTypes.bool,
     locale: PropTypes.object,
     offset: PropTypes.number.isRequired,
@@ -2137,37 +2504,65 @@ JoyrideStep.propTypes = {
     styles: PropTypes.object,
     target: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired,
     title: PropTypes.node,
-    tooltipComponent: isRequiredIf(PropTypes.oneOfType([PropTypes.func, PropTypes.element]), function (props) {
-      return !props.content && !props.title;
-    })
+    tooltipComponent: componentTypeWithRefs
   }).isRequired,
   update: PropTypes.func.isRequired
-};
+});
 
-var Joyride = function (_React$Component) {
-  inherits(Joyride, _React$Component);
+var Joyride =
+/*#__PURE__*/
+function (_React$Component) {
+  _inherits(Joyride, _React$Component);
 
   function Joyride(props) {
-    classCallCheck(this, Joyride);
+    var _this;
 
-    var _this = possibleConstructorReturn(this, (Joyride.__proto__ || Object.getPrototypeOf(Joyride)).call(this, props));
+    _classCallCheck(this, Joyride);
 
-    _this.callback = function (data) {
+    _this = _possibleConstructorReturn(this, _getPrototypeOf(Joyride).call(this, props));
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "initStore", function () {
+      var _this$props = _this.props,
+          debug = _this$props.debug,
+          getHelpers = _this$props.getHelpers,
+          run = _this$props.run,
+          stepIndex = _this$props.stepIndex;
+      _this.store = new createStore(_objectSpread({}, _this.props, {
+        controlled: run && is.number(stepIndex)
+      }));
+      _this.helpers = _this.store.getHelpers();
+      var addListener = _this.store.addListener;
+      log({
+        title: 'init',
+        data: [{
+          key: 'props',
+          value: _this.props
+        }, {
+          key: 'state',
+          value: _this.state
+        }],
+        debug: debug
+      }); // Sync the store to this component's state.
+
+      addListener(_this.syncState);
+      getHelpers(_this.helpers);
+      return _this.store.getState();
+    });
+
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "callback", function (data) {
       var callback = _this.props.callback;
-
       /* istanbul ignore else */
 
       if (is.function(callback)) {
         callback(data);
       }
-    };
+    });
 
-    _this.handleKeyboard = function (e) {
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleKeyboard", function (e) {
       var _this$state = _this.state,
           index = _this$state.index,
           lifecycle = _this$state.lifecycle;
       var steps = _this.props.steps;
-
       var step = steps[index];
       var intKey = window.Event ? e.which : e.keyCode;
 
@@ -2176,197 +2571,183 @@ var Joyride = function (_React$Component) {
           _this.store.close();
         }
       }
-    };
+    });
 
-    _this.syncState = function (state) {
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "syncState", function (state) {
       _this.setState(state);
-    };
+    });
 
-    _this.getPopper = function (popper, type) {
+    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setPopper", function (popper, type) {
       if (type === 'wrapper') {
         _this.beaconPopper = popper;
       } else {
         _this.tooltipPopper = popper;
       }
-    };
+    });
 
-    _this.store = new createStore(_extends({}, props, {
-      controlled: props.run && is.number(props.stepIndex)
-    }));
-    _this.state = _this.store.getState();
-    _this.helpers = _this.store.getHelpers();
+    _this.state = _this.initStore();
     return _this;
   }
 
-  createClass(Joyride, [{
-    key: 'componentDidMount',
+  _createClass(Joyride, [{
+    key: "componentDidMount",
     value: function componentDidMount() {
       if (!canUseDOM) return;
-
-      var _props = this.props,
-          debug = _props.debug,
-          disableCloseOnEsc = _props.disableCloseOnEsc,
-          run = _props.run,
-          steps = _props.steps;
+      var _this$props2 = this.props,
+          disableCloseOnEsc = _this$props2.disableCloseOnEsc,
+          debug = _this$props2.debug,
+          run = _this$props2.run,
+          steps = _this$props2.steps;
       var start = this.store.start;
-
-
-      log({
-        title: 'init',
-        data: [{ key: 'props', value: this.props }, { key: 'state', value: this.state }],
-        debug: debug
-      });
-
-      // Sync the store to this component state.
-      this.store.addListener(this.syncState);
 
       if (validateSteps(steps, debug) && run) {
         start();
       }
-
       /* istanbul ignore else */
+
+
       if (!disableCloseOnEsc) {
-        document.body.addEventListener('keydown', this.handleKeyboard, { passive: true });
-      }
-    }
-  }, {
-    key: 'componentWillReceiveProps',
-    value: function componentWillReceiveProps(nextProps) {
-      if (!canUseDOM) return;
-      var _state = this.state,
-          action = _state.action,
-          status = _state.status;
-      var _props2 = this.props,
-          steps = _props2.steps,
-          stepIndex = _props2.stepIndex;
-      var debug = nextProps.debug,
-          run = nextProps.run,
-          nextSteps = nextProps.steps,
-          nextStepIndex = nextProps.stepIndex;
-      var _store = this.store,
-          setSteps = _store.setSteps,
-          start = _store.start,
-          stop = _store.stop,
-          update = _store.update;
-
-      var diffProps = !isEqual(this.props, nextProps);
-
-      var _treeChanges = treeChanges(this.props, nextProps),
-          changed = _treeChanges.changed;
-
-      if (diffProps) {
-        log({
-          title: 'props',
-          data: [{ key: 'nextProps', value: nextProps }, { key: 'props', value: this.props }],
-          debug: debug
+        document.body.addEventListener('keydown', this.handleKeyboard, {
+          passive: true
         });
-
-        var stepsChanged = !isEqual(nextSteps, steps);
-        var stepIndexChanged = is.number(nextStepIndex) && changed('stepIndex');
-
-        /* istanbul ignore else */
-        if (changed('run')) {
-          if (run) {
-            start(nextStepIndex);
-          } else {
-            stop();
-          }
-        }
-
-        if (stepsChanged) {
-          if (validateSteps(nextSteps, debug)) {
-            setSteps(nextSteps);
-          } else {
-            console.warn('Steps are not valid', nextSteps); //eslint-disable-line no-console
-          }
-        }
-
-        /* istanbul ignore else */
-        if (stepIndexChanged) {
-          var nextAction = stepIndex < nextStepIndex ? ACTIONS.NEXT : ACTIONS.PREV;
-
-          if (action === ACTIONS.STOP) {
-            nextAction = ACTIONS.START;
-          }
-
-          if (!([STATUS.FINISHED, STATUS.SKIPPED].indexOf(status) !== -1)) {
-            update({
-              action: action === ACTIONS.CLOSE ? ACTIONS.CLOSE : nextAction,
-              index: nextStepIndex,
-              lifecycle: LIFECYCLE.INIT
-            });
-          }
-        }
       }
     }
   }, {
-    key: 'componentDidUpdate',
+    key: "componentDidUpdate",
     value: function componentDidUpdate(prevProps, prevState) {
       if (!canUseDOM) return;
+      var _this$state2 = this.state,
+          action = _this$state2.action,
+          controlled = _this$state2.controlled,
+          index = _this$state2.index,
+          lifecycle = _this$state2.lifecycle,
+          status = _this$state2.status;
+      var _this$props3 = this.props,
+          debug = _this$props3.debug,
+          run = _this$props3.run,
+          stepIndex = _this$props3.stepIndex,
+          steps = _this$props3.steps;
+      var prevSteps = prevProps.steps,
+          prevStepIndex = prevProps.stepIndex;
+      var _this$store = this.store,
+          setSteps = _this$store.setSteps,
+          reset = _this$store.reset,
+          start = _this$store.start,
+          stop = _this$store.stop,
+          update = _this$store.update;
 
-      var _state2 = this.state,
-          index = _state2.index,
-          lifecycle = _state2.lifecycle,
-          status = _state2.status;
-      var _props3 = this.props,
-          debug = _props3.debug,
-          steps = _props3.steps;
+      var _treeChanges = treeChanges(prevProps, this.props),
+          changedProps = _treeChanges.changed;
 
       var _treeChanges2 = treeChanges(prevState, this.state),
           changed = _treeChanges2.changed,
           changedFrom = _treeChanges2.changedFrom,
           changedTo = _treeChanges2.changedTo;
 
-      var diffState = !isEqual(prevState, this.state);
       var step = getMergedStep(steps[index], this.props);
+      var stepsChanged = !isEqual(prevSteps, steps);
+      var stepIndexChanged = is.number(stepIndex) && changedProps('stepIndex');
 
-      if (diffState) {
-        log({
-          title: 'state',
-          data: [{ key: 'state', value: this.state }, { key: 'changed', value: diffState }, { key: 'step', value: step }],
-          debug: debug
-        });
+      if (stepsChanged) {
+        if (validateSteps(steps, debug)) {
+          setSteps(steps);
+        } else {
+          console.warn('Steps are not valid', steps); //eslint-disable-line no-console
+        }
+      }
+      /* istanbul ignore else */
 
-        var currentIndex = index;
 
-        if (changed('status')) {
-          var type = EVENTS.TOUR_STATUS;
+      if (changedProps('run')) {
+        if (run) {
+          start(stepIndex);
+        } else {
+          stop();
+        }
+      }
+      /* istanbul ignore else */
 
-          if (changedTo('status', STATUS.FINISHED) || changedTo('status', STATUS.SKIPPED)) {
-            type = EVENTS.TOUR_END;
-            // Return the last step when the tour is finished
-            step = getMergedStep(steps[prevState.index], this.props);
-            currentIndex = prevState.index;
-          } else if (changedFrom('status', STATUS.READY, STATUS.RUNNING)) {
-            type = EVENTS.TOUR_START;
-          }
 
-          this.callback(_extends({}, this.state, {
-            index: currentIndex,
-            step: step,
-            type: type
+      if (stepIndexChanged) {
+        var nextAction = prevStepIndex < stepIndex ? ACTIONS.NEXT : ACTIONS.PREV;
+
+        if (action === ACTIONS.STOP) {
+          nextAction = ACTIONS.START;
+        }
+
+        if (![STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+          update({
+            action: action === ACTIONS.CLOSE ? ACTIONS.CLOSE : nextAction,
+            index: stepIndex,
+            lifecycle: LIFECYCLE.INIT
+          });
+        }
+      }
+
+      var callbackData = _objectSpread({}, this.state, {
+        index: index,
+        step: step
+      });
+
+      var isAfterAction = changedTo('action', [ACTIONS.NEXT, ACTIONS.PREV, ACTIONS.SKIP, ACTIONS.CLOSE]);
+
+      if (isAfterAction && changedTo('status', STATUS.PAUSED)) {
+        var prevStep = getMergedStep(steps[prevState.index], this.props);
+        this.callback(_objectSpread({}, callbackData, {
+          index: prevState.index,
+          lifecycle: LIFECYCLE.COMPLETE,
+          step: prevStep,
+          type: EVENTS.STEP_AFTER
+        }));
+      }
+
+      if (changedTo('status', [STATUS.FINISHED, STATUS.SKIPPED])) {
+        var _prevStep = getMergedStep(steps[prevState.index], this.props);
+
+        if (!controlled) {
+          this.callback(_objectSpread({}, callbackData, {
+            index: prevState.index,
+            lifecycle: LIFECYCLE.COMPLETE,
+            step: _prevStep,
+            type: EVENTS.STEP_AFTER
           }));
         }
 
-        if (step) {
-          this.scrollToStep(prevState);
+        this.callback(_objectSpread({}, callbackData, {
+          type: EVENTS.TOUR_END,
+          // Return the last step when the tour is finished
+          step: _prevStep,
+          index: prevState.index
+        }));
+        reset();
+      } else if (changedFrom('status', [STATUS.IDLE, STATUS.READY], STATUS.RUNNING)) {
+        this.callback(_objectSpread({}, callbackData, {
+          type: EVENTS.TOUR_START
+        }));
+      } else if (changed('status')) {
+        this.callback(_objectSpread({}, callbackData, {
+          type: EVENTS.TOUR_STATUS
+        }));
+      } else if (changedTo('action', ACTIONS.RESET)) {
+        this.callback(_objectSpread({}, callbackData, {
+          type: EVENTS.TOUR_STATUS
+        }));
+      }
 
-          if (step.placement === 'center' && status === STATUS.RUNNING && lifecycle === LIFECYCLE.INIT) {
-            this.store.update({ lifecycle: LIFECYCLE.READY });
-          }
-        }
+      if (step) {
+        this.scrollToStep(prevState);
 
-        if (changedTo('lifecycle', LIFECYCLE.INIT)) {
-          delete this.beaconPopper;
-          delete this.tooltipPopper;
+        if (step.placement === 'center' && status === STATUS.RUNNING && lifecycle === LIFECYCLE.INIT) {
+          this.store.update({
+            lifecycle: LIFECYCLE.READY
+          });
         }
       }
     }
   }, {
-    key: 'componentWillUnmount',
+    key: "componentWillUnmount",
     value: function componentWillUnmount() {
       var disableCloseOnEsc = this.props.disableCloseOnEsc;
-
       /* istanbul ignore else */
 
       if (!disableCloseOnEsc) {
@@ -2374,68 +2755,78 @@ var Joyride = function (_React$Component) {
       }
     }
   }, {
-    key: 'scrollToStep',
+    key: "scrollToStep",
     value: function scrollToStep(prevState) {
-      var _state3 = this.state,
-          index = _state3.index,
-          lifecycle = _state3.lifecycle,
-          status = _state3.status;
-      var _props4 = this.props,
-          debug = _props4.debug,
-          disableScrolling = _props4.disableScrolling,
-          scrollToFirstStep = _props4.scrollToFirstStep,
-          scrollOffset = _props4.scrollOffset,
-          steps = _props4.steps;
-
+      var _this$state3 = this.state,
+          index = _this$state3.index,
+          lifecycle = _this$state3.lifecycle,
+          status = _this$state3.status;
+      var _this$props4 = this.props,
+          debug = _this$props4.debug,
+          disableScrolling = _this$props4.disableScrolling,
+          disableScrollParentFix = _this$props4.disableScrollParentFix,
+          scrollToFirstStep = _this$props4.scrollToFirstStep,
+          scrollOffset = _this$props4.scrollOffset,
+          steps = _this$props4.steps;
       var step = getMergedStep(steps[index], this.props);
+      /* istanbul ignore else */
 
       if (step) {
         var target = getElement(step.target);
-
-        var shouldScroll = step && !disableScrolling && (!step.isFixed || !isFixed(target)) // fixed steps don't need to scroll
-        && prevState.lifecycle !== lifecycle && [LIFECYCLE.BEACON, LIFECYCLE.TOOLTIP].indexOf(lifecycle) !== -1 && (scrollToFirstStep || prevState.index !== index);
+        var shouldScroll = !disableScrolling && step.placement !== 'center' && (!step.isFixed || !isFixed(target)) && // fixed steps don't need to scroll
+        prevState.lifecycle !== lifecycle && [LIFECYCLE.BEACON, LIFECYCLE.TOOLTIP].includes(lifecycle) && (scrollToFirstStep || prevState.index !== index);
 
         if (status === STATUS.RUNNING && shouldScroll) {
-          var hasCustomScroll = hasCustomScrollParent(target);
-          var scrollParent = getScrollParent(target);
-          var scrollY = Math.floor(getScrollTo(target, scrollOffset));
-
+          var hasCustomScroll = hasCustomScrollParent(target, disableScrollParentFix);
+          var scrollParent$$1 = getScrollParent(target, disableScrollParentFix);
+          var scrollY = Math.floor(getScrollTo(target, scrollOffset, disableScrollParentFix)) || 0;
           log({
             title: 'scrollToStep',
-            data: [{ key: 'index', value: index }, { key: 'lifecycle', value: lifecycle }, { key: 'status', value: status }],
+            data: [{
+              key: 'index',
+              value: index
+            }, {
+              key: 'lifecycle',
+              value: lifecycle
+            }, {
+              key: 'status',
+              value: status
+            }],
             debug: debug
           });
+          /* istanbul ignore else */
 
           if (lifecycle === LIFECYCLE.BEACON && this.beaconPopper) {
-            var _beaconPopper = this.beaconPopper,
-                placement = _beaconPopper.placement,
-                popper = _beaconPopper.popper;
+            var _this$beaconPopper = this.beaconPopper,
+                placement = _this$beaconPopper.placement,
+                popper = _this$beaconPopper.popper;
+            /* istanbul ignore else */
 
-
-            if (!(['bottom'].indexOf(placement) !== -1) && !hasCustomScroll) {
+            if (!['bottom'].includes(placement) && !hasCustomScroll) {
               scrollY = Math.floor(popper.top - scrollOffset);
             }
           } else if (lifecycle === LIFECYCLE.TOOLTIP && this.tooltipPopper) {
-            var _tooltipPopper = this.tooltipPopper,
-                flipped = _tooltipPopper.flipped,
-                _placement = _tooltipPopper.placement,
-                _popper = _tooltipPopper.popper;
+            var _this$tooltipPopper = this.tooltipPopper,
+                flipped = _this$tooltipPopper.flipped,
+                _placement = _this$tooltipPopper.placement,
+                _popper = _this$tooltipPopper.popper;
 
-
-            if (['top', 'right'].indexOf(_placement) !== -1 && !flipped && !hasCustomScroll) {
+            if (['top', 'right', 'left'].includes(_placement) && !flipped && !hasCustomScroll) {
               scrollY = Math.floor(_popper.top - scrollOffset);
             } else {
               scrollY -= step.spotlightPadding;
             }
           }
 
-          if (status === STATUS.RUNNING && shouldScroll && scrollY >= 0) {
-            scrollTo(scrollY, scrollParent);
+          scrollY = scrollY >= 0 ? scrollY : 0;
+          /* istanbul ignore else */
+
+          if (status === STATUS.RUNNING) {
+            scrollTo(scrollY, scrollParent$$1);
           }
         }
       }
     }
-
     /**
      * Trigger the callback.
      *
@@ -2443,63 +2834,43 @@ var Joyride = function (_React$Component) {
      * @param {Object} data
      */
 
-
-    /**
-     * Keydown event listener
-     *
-     * @private
-     * @param {Event} e - Keyboard event
-     */
-
-
-    /**
-     * Sync the store with the component's state
-     *
-     * @param {Object} state
-     */
-
   }, {
-    key: 'render',
+    key: "render",
     value: function render() {
       if (!canUseDOM) return null;
-
-      var _state4 = this.state,
-          index = _state4.index,
-          status = _state4.status;
-      var _props5 = this.props,
-          continuous = _props5.continuous,
-          debug = _props5.debug,
-          disableScrolling = _props5.disableScrolling,
-          steps = _props5.steps;
-
+      var _this$state4 = this.state,
+          index = _this$state4.index,
+          status = _this$state4.status;
+      var _this$props5 = this.props,
+          continuous = _this$props5.continuous,
+          debug = _this$props5.debug,
+          steps = _this$props5.steps;
       var step = getMergedStep(steps[index], this.props);
-      var output = void 0;
+      var output;
 
       if (status === STATUS.RUNNING && step) {
         output = React.createElement(JoyrideStep, _extends({}, this.state, {
           callback: this.callback,
           continuous: continuous,
           debug: debug,
-          disableScrolling: disableScrolling,
-          getPopper: this.getPopper,
+          setPopper: this.setPopper,
           helpers: this.helpers,
           step: step,
           update: this.store.update
         }));
       }
 
-      return React.createElement(
-        'div',
-        { className: 'joyride' },
-        output
-      );
+      return React.createElement("div", {
+        className: "react-joyride"
+      }, output);
     }
   }]);
+
   return Joyride;
 }(React.Component);
 
-Joyride.propTypes = {
-  beaconComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element]),
+_defineProperty(Joyride, "propTypes", {
+  beaconComponent: componentTypeWithRefs,
   callback: PropTypes.func,
   continuous: PropTypes.bool,
   debug: PropTypes.bool,
@@ -2507,9 +2878,13 @@ Joyride.propTypes = {
   disableOverlay: PropTypes.bool,
   disableOverlayClose: PropTypes.bool,
   disableScrolling: PropTypes.bool,
+  disableScrollParentFix: PropTypes.bool,
   floaterProps: PropTypes.shape({
-    offset: PropTypes.number
+    options: PropTypes.object,
+    styles: PropTypes.object,
+    wrapperOptions: PropTypes.object
   }),
+  getHelpers: PropTypes.func,
   hideBackButton: PropTypes.bool,
   locale: PropTypes.object,
   run: PropTypes.bool,
@@ -2522,15 +2897,18 @@ Joyride.propTypes = {
   stepIndex: PropTypes.number,
   steps: PropTypes.array,
   styles: PropTypes.object,
-  tooltipComponent: PropTypes.oneOfType([PropTypes.func, PropTypes.element])
-};
-Joyride.defaultProps = {
+  tooltipComponent: componentTypeWithRefs
+});
+
+_defineProperty(Joyride, "defaultProps", {
   continuous: false,
   debug: false,
   disableCloseOnEsc: false,
   disableOverlay: false,
   disableOverlayClose: false,
   disableScrolling: false,
+  disableScrollParentFix: false,
+  getHelpers: function getHelpers() {},
   hideBackButton: false,
   run: true,
   scrollOffset: 20,
@@ -2540,6 +2918,7 @@ Joyride.defaultProps = {
   spotlightClicks: false,
   spotlightPadding: 10,
   steps: []
-};
+});
 
 export default Joyride;
+export { ACTIONS, EVENTS, LIFECYCLE, STATUS };
