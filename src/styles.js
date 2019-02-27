@@ -12,12 +12,13 @@ const defaultOptions = {
   zIndex: 100,
 };
 
-const buttonReset = {
+const buttonBase = {
   backgroundColor: 'transparent',
   border: 0,
   borderRadius: 0,
   color: '#555',
   cursor: 'pointer',
+  fontSize: 16,
   lineHeight: 1,
   padding: 8,
   WebkitAppearance: 'none',
@@ -28,22 +29,18 @@ const spotlight = {
   position: 'absolute',
 };
 
-export default function getStyles(stepStyles) {
+export default function getStyles(stepStyles = {}) {
   const options = deepmerge(defaultOptions, stepStyles.options || {});
   let width = 290;
 
   if (window.innerWidth > 480) {
     width = 380;
   }
-  else if (window.innerWidth > 768) {
-    width = 490;
-  }
 
   if (options.width) {
     if (window.innerWidth < options.width) {
       width = window.innerWidth - 30;
-    }
-    else {
+    } else {
       width = options.width; //eslint-disable-line prefer-destructuring
     }
   }
@@ -60,7 +57,7 @@ export default function getStyles(stepStyles) {
 
   const defaultStyles = {
     beacon: {
-      ...buttonReset,
+      ...buttonBase,
       display: 'inline-block',
       height: options.beaconSize,
       position: 'relative',
@@ -112,7 +109,7 @@ export default function getStyles(stepStyles) {
     },
     tooltipTitle: {
       fontSize: 18,
-      margin: '0 0 10px 0',
+      margin: 0,
     },
     tooltipContent: {
       padding: '20px 10px',
@@ -120,23 +117,26 @@ export default function getStyles(stepStyles) {
     tooltipFooter: {
       alignItems: 'center',
       display: 'flex',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-end',
       marginTop: 15,
     },
+    tooltipFooterSpacer: {
+      flex: 1,
+    },
     buttonNext: {
-      ...buttonReset,
+      ...buttonBase,
       backgroundColor: options.primaryColor,
       borderRadius: 4,
       color: '#fff',
     },
     buttonBack: {
-      ...buttonReset,
+      ...buttonBase,
       color: options.primaryColor,
       marginLeft: 'auto',
       marginRight: 5,
     },
     buttonClose: {
-      ...buttonReset,
+      ...buttonBase,
       color: options.textColor,
       height: 14,
       padding: 15,
@@ -146,7 +146,7 @@ export default function getStyles(stepStyles) {
       width: 14,
     },
     buttonSkip: {
-      ...buttonReset,
+      ...buttonBase,
       color: options.textColor,
       fontSize: 14,
     },
@@ -157,6 +157,10 @@ export default function getStyles(stepStyles) {
     },
     overlayLegacy: {
       ...overlay,
+    },
+    overlayLegacyCenter: {
+      ...overlay,
+      backgroundColor: options.overlayColor,
     },
     spotlight: {
       ...spotlight,
@@ -170,12 +174,12 @@ export default function getStyles(stepStyles) {
       arrow: {
         color: options.arrowColor,
       },
-      floater: {
+      options: {
         zIndex: options.zIndex,
       },
     },
     options,
   };
 
-  return deepmerge(defaultStyles, stepStyles || {});
+  return deepmerge(defaultStyles, stepStyles);
 }

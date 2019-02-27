@@ -1,5 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import is from 'is-lite';
+import { componentTypeWithRefs } from '../modules/propTypes';
 
 export default class JoyrideBeacon extends React.Component {
   constructor(props) {
@@ -9,31 +11,31 @@ export default class JoyrideBeacon extends React.Component {
       const head = document.head || document.getElementsByTagName('head')[0];
       const style = document.createElement('style');
       const css = `
-@keyframes joyride-beacon-inner {
-  20% {
-    opacity: 0.9;
-  }
-
-  90% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes joyride-beacon-outer {
-  0% {
-    transform: scale(1);
-  }
-
-  45% {
-    opacity: 0.7;
-    transform: scale(0.75);
-  }
-
-  100% {
-    opacity: 0.9;
-    transform: scale(1);
-  }
-}
+        @keyframes joyride-beacon-inner {
+          20% {
+            opacity: 0.9;
+          }
+        
+          90% {
+            opacity: 0.7;
+          }
+        }
+        
+        @keyframes joyride-beacon-outer {
+          0% {
+            transform: scale(1);
+          }
+        
+          45% {
+            opacity: 0.7;
+            transform: scale(0.75);
+          }
+        
+          100% {
+            opacity: 0.9;
+            transform: scale(1);
+          }
+        }
       `;
 
       style.type = 'text/css';
@@ -45,14 +47,25 @@ export default class JoyrideBeacon extends React.Component {
   }
 
   static propTypes = {
-    beaconComponent: PropTypes.oneOfType([
-      PropTypes.func,
-      PropTypes.element,
-    ]),
+    beaconComponent: componentTypeWithRefs,
     locale: PropTypes.object.isRequired,
     onClickOrHover: PropTypes.func.isRequired,
     styles: PropTypes.object.isRequired,
   };
+
+  componentDidMount() {
+    if (process.env.NODE_ENV !== 'production') {
+      if (!is.domElement(this.beacon)) {
+        console.warn('beacon is not a valid DOM element'); //eslint-disable-line no-console
+      }
+    }
+
+    setTimeout(() => {
+      if (is.domElement(this.beacon)) {
+        this.beacon.focus();
+      }
+    }, 0);
+  }
 
   componentWillUnmount() {
     const style = document.getElementById('joyride-beacon-animation');
@@ -62,31 +75,32 @@ export default class JoyrideBeacon extends React.Component {
     }
   }
 
+  setBeaconRef = c => {
+    this.beacon = c;
+  };
+
   render() {
     const { beaconComponent, locale, onClickOrHover, styles } = this.props;
     const props = {
       'aria-label': locale.open,
       onClick: onClickOrHover,
       onMouseEnter: onClickOrHover,
+      ref: this.setBeaconRef,
       title: locale.open,
     };
     let component;
 
     if (beaconComponent) {
-      if (React.isValidElement(beaconComponent)) {
-        component = React.cloneElement(beaconComponent, props);
-      }
-      else {
-        component = beaconComponent(props);
-      }
-    }
-    else {
+      const BeaconComponent = beaconComponent;
+      component = <BeaconComponent {...props} />;
+    } else {
       component = (
         <button
           key="JoyrideBeacon"
-          className="joyride-beacon"
+          className="react-joyride__beacon"
           style={styles.beacon}
           type="button"
+          data-test-id="button-beacon"
           {...props}
         >
           <span style={styles.beaconInner} />

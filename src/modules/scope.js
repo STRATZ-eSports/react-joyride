@@ -1,85 +1,116 @@
-const validTabNodes = /input|select|textarea|button|object/;
-const TAB_KEY = 9;
-let modalElement = null;
+// @flow
 
-function isHidden(element) {
-  const noSize = element.offsetWidth <= 0 && element.offsetHeight <= 0;
+export default class Scope {
+  element: HTMLElement;
+  options: Object;
 
-  if (noSize && !element.innerHTML) return true;
+  constructor(element: HTMLElement, options: ?Object = {}) {
+    if (!(element instanceof HTMLElement)) {
+      throw new TypeError('Invalid parameter: element must be an HTMLElement');
+    }
 
-  const style = window.getComputedStyle(element);
-  return noSize ? style.getPropertyValue('overflow') !== 'visible' : style.getPropertyValue('display') === 'none';
-}
+    this.element = element;
+    this.options = options;
 
-function isVisible(element) {
-  let parentElement = element;
-  while (parentElement) {
-    if (parentElement === document.body) break;
-    if (isHidden(parentElement)) return false;
-    parentElement = parentElement.parentNode;
+    window.addEventListener('keydown', this.handleKeyDown, false);
+
+    this.setFocus();
   }
-  return true;
-}
 
-function canHaveFocus(element, isTabIndexNotNaN) {
-  const nodeName = element.nodeName.toLowerCase();
-  const res = (validTabNodes.test(nodeName) && !element.disabled)
-    || (nodeName === 'a' ? element.href || isTabIndexNotNaN : isTabIndexNotNaN);
-  return res && isVisible(element);
-}
+  canBeTabbed = (element: HTMLElement): boolean => {
+    let { tabIndex } = element;
+    if (tabIndex === null || tabIndex < 0) tabIndex = undefined;
 
-function canBeTabbed(element) {
-  let tabIndex = element.getAttribute('tabindex');
-  if (tabIndex === null) tabIndex = undefined;
-  const isTabIndexNaN = isNaN(tabIndex);
-  return (isTabIndexNaN || tabIndex >= 0) && canHaveFocus(element, !isTabIndexNaN);
-}
+    const isTabIndexNaN = isNaN(tabIndex);
 
-function findValidTabElements(element) {
-  return [].slice.call(element.querySelectorAll('*'), 0).filter(canBeTabbed);
-}
+    return !isTabIndexNaN && this.canHaveFocus(element, true);
+  };
 
-function interceptTab(node, event) {
-  const elements = findValidTabElements(node);
-  const { shiftKey } = event;
+  canHaveFocus = (element: HTMLElement, isTabIndexNotNaN: boolean): boolean => {
+    const validTabNodes = /input|select|textarea|button|object/;
+    const nodeName = element.nodeName.toLowerCase();
+    const res =
+      (validTabNodes.test(nodeName) && !element.getAttribute('disabled')) ||
+      (nodeName === 'a' ? element.getAttribute('href') || isTabIndexNotNaN : isTabIndexNotNaN);
 
-  if (!elements.length) {
+    return res && this.isVisible(element);
+  };
+
+  findValidTabElements = () =>
+    [].slice.call(this.element.querySelectorAll('*'), 0).filter(this.canBeTabbed);
+
+  handleKeyDown = (e: KeyboardEvent) => {
+    const { keyCode = 9 } = this.options;
+
+    /* istanbul ignore else */
+    if (e.keyCode === keyCode) {
+      this.interceptTab(e);
+    }
+  };
+
+  interceptTab = (event: KeyboardEvent) => {
     event.preventDefault();
-    return;
-  }
+    const elements = this.findValidTabElements();
+    const { shiftKey } = event;
 
-  let x = elements.indexOf(document.activeElement);
+    if (!elements.length) {
+      return;
+    }
 
-  if (x === -1 || (!shiftKey && x + 1 === elements.length)) {
-    x = 0;
-  }
-  else {
-    x += shiftKey ? -1 : 1;
-  }
+    let x = elements.indexOf(document.activeElement);
 
-  event.preventDefault();
+    if (x === -1 || (!shiftKey && x + 1 === elements.length)) {
+      x = 0;
+    } else if (shiftKey && x === 0) {
+      x = elements.length - 1;
+    } else {
+      x += shiftKey ? -1 : 1;
+    }
 
-  elements[x].focus();
-}
+    elements[x].focus();
+  };
 
-function handleKeyDown(e) {
-  if (!modalElement) {
-    return;
-  }
+  isHidden = (element: HTMLElement) => {
+    const noSize = element.offsetWidth <= 0 && element.offsetHeight <= 0;
+    const style = window.getComputedStyle(element);
 
-  if (e.keyCode === TAB_KEY) {
-    interceptTab(modalElement, e);
-  }
-}
+    if (noSize && !element.innerHTML) return true;
 
-export function setScope(element) {
-  modalElement = element;
+    return (
+      (noSize && style.getPropertyValue('overflow') !== 'visible') ||
+      style.getPropertyValue('display') === 'none'
+    );
+  };
 
-  window.addEventListener('keydown', handleKeyDown, false);
-}
+  isVisible = (element: HTMLElement) => {
+    let parentElement = element;
 
-export function removeScope() {
-  modalElement = null;
+    while (parentElement) {
+      /* istanbul ignore else */
+      if (parentElement instanceof HTMLElement) {
+        if (parentElement === document.body) break;
+        /* istanbul ignore else */
+        if (this.isHidden(parentElement)) return false;
+        parentElement = parentElement.parentNode;
+      }
+    }
 
-  window.removeEventListener('keydown', handleKeyDown);
+    return true;
+  };
+
+  removeScope = () => {
+    window.removeEventListener('keydown', this.handleKeyDown);
+  };
+
+  setFocus = () => {
+    const { selector } = this.options;
+    if (!selector) return;
+
+    const target = this.element.querySelector(selector);
+
+    /* istanbul ignore else */
+    if (target) {
+      target.focus();
+    }
+  };
 }

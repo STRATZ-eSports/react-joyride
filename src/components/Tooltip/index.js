@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-
+import { getText } from '../../modules/helpers';
 import Container from './Container';
 
 export default class JoyrideTooltip extends React.Component {
@@ -14,21 +14,21 @@ export default class JoyrideTooltip extends React.Component {
     step: PropTypes.object.isRequired,
   };
 
-  handleClickBack = (e) => {
+  handleClickBack = e => {
     e.preventDefault();
     const { helpers } = this.props;
 
     helpers.prev();
   };
 
-  handleClickClose = (e) => {
+  handleClickClose = e => {
     e.preventDefault();
     const { helpers } = this.props;
 
     helpers.close();
   };
 
-  handleClickPrimary = (e) => {
+  handleClickPrimary = e => {
     e.preventDefault();
     const { continuous, helpers } = this.props;
 
@@ -40,57 +40,91 @@ export default class JoyrideTooltip extends React.Component {
     helpers.next();
   };
 
-  handleClickSkip = (e) => {
+  handleClickSkip = e => {
     e.preventDefault();
     const { helpers } = this.props;
 
     helpers.skip();
   };
 
-  render() {
-    const { continuous, index, isLastStep, setTooltipRef, size, step } = this.props;
-    const { content, locale, title, tooltipComponent: TooltipComponent, ...restStepProps } = step;
-    const { back, close, last, next, skip } = locale;
+  getElementsProps = () => {
+    const { continuous, isLastStep, setTooltipRef, step } = this.props;
+
+    const back = getText(step.locale.back);
+    const close = getText(step.locale.close);
+    const last = getText(step.locale.last);
+    const next = getText(step.locale.next);
+    const skip = getText(step.locale.skip);
+
     let primaryText = continuous ? next : close;
 
     if (isLastStep) {
       primaryText = last;
     }
 
-    let component;
-    const buttonProps = {
-      backProps: { 'aria-label': back, onClick: this.handleClickBack, role: 'button', title: back },
-      closeProps: { 'aria-label': close, onClick: this.handleClickClose, role: 'button', title: close },
-      primaryProps: { 'aria-label': primaryText, onClick: this.handleClickPrimary, role: 'button', title: primaryText },
-      skipProps: { 'aria-label': skip, onClick: this.handleClickSkip, role: 'button', title: skip },
+    return {
+      backProps: {
+        'aria-label': back,
+        'data-action': 'back',
+        onClick: this.handleClickBack,
+        role: 'button',
+        title: back,
+      },
+      closeProps: {
+        'aria-label': close,
+        'data-action': 'close',
+        onClick: this.handleClickClose,
+        role: 'button',
+        title: close,
+      },
+      primaryProps: {
+        'aria-label': primaryText,
+        'data-action': 'primary',
+        onClick: this.handleClickPrimary,
+        role: 'button',
+        title: primaryText,
+      },
+      skipProps: {
+        'aria-label': skip,
+        'data-action': 'skip',
+        onClick: this.handleClickSkip,
+        role: 'button',
+        title: skip,
+      },
+      tooltipProps: {
+        'aria-modal': true,
+        ref: setTooltipRef,
+        role: 'alertdialog',
+      },
     };
+  };
 
-    if (TooltipComponent) {
+  render() {
+    const { continuous, index, isLastStep, size, step } = this.props;
+    const { beaconComponent, tooltipComponent, ...cleanStep } = step;
+    let component;
+
+    if (tooltipComponent) {
       const renderProps = {
-        ...restStepProps,
-        ...buttonProps,
-        content,
+        ...this.getElementsProps(),
         continuous,
         index,
         isLastStep,
-        locale,
-        setTooltipRef,
         size,
-        title,
+        step: cleanStep,
       };
 
+      const TooltipComponent = tooltipComponent;
       component = <TooltipComponent {...renderProps} />;
-    }
-    else {
+    } else {
       component = (
         <Container
+          {...this.getElementsProps()}
           continuous={continuous}
           index={index}
           isLastStep={isLastStep}
-          setTooltipRef={setTooltipRef}
           size={size}
           step={step}
-          {...buttonProps}
         />
       );
     }

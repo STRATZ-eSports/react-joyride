@@ -1,125 +1,127 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import isRequiredIf from 'react-proptype-conditional-require';
 import Floater from 'react-floater';
 import treeChanges from 'tree-changes';
 import is from 'is-lite';
 
-import ACTIONS from '../constants/actions';
-import LIFECYCLE from '../constants/lifecycle';
+import { ACTIONS, EVENTS, LIFECYCLE, STATUS } from '../constants';
 
-import { getElement, isFixed } from '../modules/dom';
-import { log } from '../modules/helpers';
-import { setScope, removeScope } from '../modules/scope';
+import { getElement, isElementVisible, isFixed } from '../modules/dom';
+import { log, hideBeacon } from '../modules/helpers';
+import { componentTypeWithRefs } from '../modules/propTypes';
+import Scope from '../modules/scope';
 import { validateStep } from '../modules/step';
 
 import Beacon from './Beacon';
 import Overlay from './Overlay';
 import Tooltip from './Tooltip/index';
-import JoyridePortal from './Portal';
-import EVENTS from '../constants/events';
-import STATUS from '../constants/status';
+import Portal from './Portal';
 
 export default class JoyrideStep extends React.Component {
+  scope = { removeScope: () => {} };
+
   static propTypes = {
     action: PropTypes.string.isRequired,
     callback: PropTypes.func.isRequired,
     continuous: PropTypes.bool.isRequired,
     controlled: PropTypes.bool.isRequired,
     debug: PropTypes.bool.isRequired,
-    getPopper: PropTypes.func.isRequired,
     helpers: PropTypes.object.isRequired,
     index: PropTypes.number.isRequired,
     lifecycle: PropTypes.string.isRequired,
+    setPopper: PropTypes.func.isRequired,
     size: PropTypes.number.isRequired,
     status: PropTypes.string.isRequired,
     step: PropTypes.shape({
-      beaconComponent: PropTypes.oneOfType([
-        PropTypes.func,
-        PropTypes.element,
-      ]),
-      content: isRequiredIf(PropTypes.node, props => !props.tooltipComponent && !props.title),
+      beaconComponent: componentTypeWithRefs,
+      content: PropTypes.node.isRequired,
       disableBeacon: PropTypes.bool,
       disableOverlay: PropTypes.bool,
       disableOverlayClose: PropTypes.bool,
+      disableScrolling: PropTypes.bool,
+      disableScrollParentFix: PropTypes.bool,
       event: PropTypes.string,
       floaterProps: PropTypes.shape({
-        offset: PropTypes.number,
+        options: PropTypes.object,
+        styles: PropTypes.object,
+        wrapperOptions: PropTypes.object,
       }),
       hideBackButton: PropTypes.bool,
+      hideCloseButton: PropTypes.bool,
+      hideFooter: PropTypes.bool,
       isFixed: PropTypes.bool,
       locale: PropTypes.object,
       offset: PropTypes.number.isRequired,
       placement: PropTypes.oneOf([
-        'top', 'top-start', 'top-end',
-        'bottom', 'bottom-start', 'bottom-end',
-        'left', 'left-start', 'left-end',
-        'right', 'right-start', 'right-end',
-        'auto', 'center',
+        'top',
+        'top-start',
+        'top-end',
+        'bottom',
+        'bottom-start',
+        'bottom-end',
+        'left',
+        'left-start',
+        'left-end',
+        'right',
+        'right-start',
+        'right-end',
+        'auto',
+        'center',
       ]),
       spotlightClicks: PropTypes.bool,
       spotlightPadding: PropTypes.number,
       styles: PropTypes.object,
-      target: PropTypes.oneOfType([
-        PropTypes.object,
-        PropTypes.string,
-      ]).isRequired,
+      target: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired,
       title: PropTypes.node,
-      tooltipComponent: isRequiredIf(PropTypes.oneOfType([
-        PropTypes.func,
-        PropTypes.element,
-      ]), props => !props.content && !props.title),
+      tooltipComponent: componentTypeWithRefs,
     }).isRequired,
     update: PropTypes.func.isRequired,
   };
 
   componentDidMount() {
-    const { debug, lifecycle } = this.props;
+    const { debug, index } = this.props;
 
     log({
-      title: `step:${lifecycle}`,
-      data: [
-        { key: 'props', value: this.props },
-      ],
+      title: `step:${index}`,
+      data: [{ key: 'props', value: this.props }],
       debug,
     });
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { action, continuous, debug, index, lifecycle, step, update } = this.props;
-    const { changed, changedFrom } = treeChanges(this.props, nextProps);
-    const skipBeacon = continuous && action !== ACTIONS.CLOSE && (index > 0 || action === ACTIONS.PREV);
-
-    if (changedFrom('lifecycle', LIFECYCLE.INIT, LIFECYCLE.READY)) {
-      update({ lifecycle: step.disableBeacon || skipBeacon ? LIFECYCLE.TOOLTIP : LIFECYCLE.BEACON });
-    }
-
-    if (changed('index')) {
-      log({
-        title: `step:${lifecycle}`,
-        data: [
-          { key: 'props', value: this.props },
-        ],
-        debug,
-      });
-    }
-  }
-
   componentDidUpdate(prevProps) {
-    const { action, callback, controlled, index, lifecycle, size, status, step, update } = this.props;
+    const {
+      action,
+      callback,
+      continuous,
+      controlled,
+      debug,
+      index,
+      lifecycle,
+      size,
+      status,
+      step,
+      update,
+    } = this.props;
     const { changed, changedTo, changedFrom } = treeChanges(prevProps, this.props);
     const state = { action, controlled, index, lifecycle, size, status };
 
-    const isAfterAction = [
+    const skipBeacon =
+      continuous && action !== ACTIONS.CLOSE && (index > 0 || action === ACTIONS.PREV);
+    const hasStoreChanged =
+      changed('action') || changed('index') || changed('lifecycle') || changed('status');
+    const hasStarted = changedFrom(
+      'lifecycle',
+      [LIFECYCLE.TOOLTIP, LIFECYCLE.INIT],
+      LIFECYCLE.INIT,
+    );
+    const isAfterAction = changedTo('action', [
       ACTIONS.NEXT,
       ACTIONS.PREV,
       ACTIONS.SKIP,
       ACTIONS.CLOSE,
-    ].includes(action) && changed('action');
+    ]);
 
-    const hasChangedIndex = changed('index') && changedFrom('lifecycle', LIFECYCLE.TOOLTIP, LIFECYCLE.INIT);
-
-    if (!changed('status') && (hasChangedIndex || (controlled && isAfterAction))) {
+    if (isAfterAction && (hasStarted || controlled)) {
       callback({
         ...state,
         index: prevProps.index,
@@ -130,20 +132,22 @@ export default class JoyrideStep extends React.Component {
     }
 
     // There's a step to use, but there's no target in the DOM
-    if (step) {
-      const hasRenderedTarget = !!getElement(step.target);
+    if (hasStoreChanged && step) {
+      const element = getElement(step.target);
+      const hasRenderedTarget = !!element && isElementVisible(element);
 
       if (hasRenderedTarget) {
-        if (changedFrom('status', STATUS.READY, STATUS.RUNNING) || changed('index')) {
+        if (
+          changedFrom('status', STATUS.READY, STATUS.RUNNING) ||
+          changedFrom('lifecycle', LIFECYCLE.INIT, LIFECYCLE.READY)
+        ) {
           callback({
             ...state,
             step,
             type: EVENTS.STEP_BEFORE,
           });
         }
-      }
-
-      if (!hasRenderedTarget) {
+      } else {
         console.warn('Target not mounted', step); //eslint-disable-line no-console
         callback({
           ...state,
@@ -155,6 +159,18 @@ export default class JoyrideStep extends React.Component {
           update({ index: index + ([ACTIONS.PREV].includes(action) ? -1 : 1) });
         }
       }
+    }
+
+    if (changedFrom('lifecycle', LIFECYCLE.INIT, LIFECYCLE.READY)) {
+      update({ lifecycle: hideBeacon(step) || skipBeacon ? LIFECYCLE.TOOLTIP : LIFECYCLE.BEACON });
+    }
+
+    if (changed('index')) {
+      log({
+        title: `step:${lifecycle}`,
+        data: [{ key: 'props', value: this.props }],
+        debug,
+      });
     }
 
     /* istanbul ignore else */
@@ -173,17 +189,19 @@ export default class JoyrideStep extends React.Component {
         type: EVENTS.TOOLTIP,
       });
 
-      setScope(this.tooltip);
+      this.scope = new Scope(this.tooltip, { selector: '[data-action=primary]' });
+      this.scope.setFocus();
     }
 
-    if (changedFrom('lifecycle', LIFECYCLE.TOOLTIP, LIFECYCLE.INIT)) {
-      removeScope();
-    }
-
-    if (changedTo('lifecycle', LIFECYCLE.INIT)) {
+    if (changedFrom('lifecycle', [LIFECYCLE.TOOLTIP, LIFECYCLE.INIT], LIFECYCLE.INIT)) {
+      this.scope.removeScope();
       delete this.beaconPopper;
       delete this.tooltipPopper;
     }
+  }
+
+  componentWillUnmount() {
+    this.scope.removeScope();
   }
 
   /**
@@ -191,7 +209,7 @@ export default class JoyrideStep extends React.Component {
    *
    * @param {Event} e
    */
-  handleClickHoverBeacon = (e) => {
+  handleClickHoverBeacon = e => {
     const { step, update } = this.props;
 
     if (e.type === 'mouseenter' && step.event !== 'hover') {
@@ -209,21 +227,20 @@ export default class JoyrideStep extends React.Component {
     }
   };
 
-  setTooltipRef = (c) => {
+  setTooltipRef = c => {
     this.tooltip = c;
   };
 
   setPopper = (popper, type) => {
-    const { action, getPopper, update } = this.props;
+    const { action, setPopper, update } = this.props;
 
     if (type === 'wrapper') {
       this.beaconPopper = popper;
-    }
-    else {
+    } else {
       this.tooltipPopper = popper;
     }
 
-    getPopper(popper, type);
+    setPopper(popper, type);
 
     if (this.beaconPopper && this.tooltipPopper) {
       update({
@@ -236,20 +253,11 @@ export default class JoyrideStep extends React.Component {
   get open() {
     const { step, lifecycle } = this.props;
 
-    return !!(step.disableBeacon || lifecycle === LIFECYCLE.TOOLTIP);
+    return !!(hideBeacon(step) || lifecycle === LIFECYCLE.TOOLTIP);
   }
 
   render() {
-    const {
-      continuous,
-      controlled,
-      debug,
-      helpers,
-      index,
-      lifecycle,
-      size,
-      step,
-    } = this.props;
+    const { continuous, debug, helpers, index, lifecycle, size, step } = this.props;
     const target = getElement(step.target);
 
     if (!validateStep(step) || !is.domElement(target)) {
@@ -257,30 +265,30 @@ export default class JoyrideStep extends React.Component {
     }
 
     return (
-      <div key={`JoyrideStep-${index}`} className="joyride-step">
-        <JoyridePortal>
+      <div key={`JoyrideStep-${index}`} className="react-joyride__step">
+        <Portal id="react-joyride-portal">
           <Overlay
             {...step}
+            debug={debug}
             lifecycle={lifecycle}
             onClickOverlay={this.handleClickOverlay}
           />
-        </JoyridePortal>
+        </Portal>
         <Floater
-          component={(
+          component={
             <Tooltip
               continuous={continuous}
-              controlled={controlled}
               helpers={helpers}
               index={index}
+              isLastStep={index + 1 === size}
               setTooltipRef={this.setTooltipRef}
               size={size}
-              isLastStep={index + 1 === size}
               step={step}
             />
-          )}
+          }
           debug={debug}
           getPopper={this.setPopper}
-          id={`react-joyride:${index}`}
+          id={`react-joyride-step-${index}`}
           isPositioned={step.isFixed || isFixed(target)}
           open={this.open}
           placement={step.placement}

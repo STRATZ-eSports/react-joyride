@@ -8,7 +8,76 @@ import getStyles from '../styles';
 
 import DEFAULTS from '../config/defaults';
 
-import type { StepProps, JoyrideProps } from '../config/types';
+function getTourProps(props: Object): Object {
+  const sharedTourProps = [
+    'beaconComponent',
+    'disableCloseOnEsc',
+    'disableOverlay',
+    'disableOverlayClose',
+    'disableScrolling',
+    'disableScrollParentFix',
+    'floaterProps',
+    'hideBackButton',
+    'locale',
+    'showProgress',
+    'showSkipButton',
+    'spotlightClicks',
+    'spotlightPadding',
+    'styles',
+    'tooltipComponent',
+  ];
+
+  return Object.keys(props)
+    .filter(d => sharedTourProps.includes(d))
+    .reduce((acc, i) => {
+      acc[i] = props[i]; //eslint-disable-line react/destructuring-assignment
+
+      return acc;
+    }, {});
+}
+
+export function getMergedStep(step: StepProps, props: JoyrideProps): ?StepProps {
+  if (!step) return null;
+
+  const mergedStep = deepmerge.all([getTourProps(props), DEFAULTS.step, step], {
+    isMergeableObject: is.plainObject,
+  });
+  const mergedStyles = getStyles(deepmerge(props.styles || {}, step.styles || {}));
+  const scrollParent = hasCustomScrollParent(
+    getElement(step.target),
+    mergedStep.disableScrollParentFix,
+  );
+  const floaterProps = deepmerge.all([
+    props.floaterProps || {},
+    DEFAULTS.floaterProps,
+    mergedStep.floaterProps || {},
+  ]);
+
+  // Set react-floater props
+  floaterProps.offset = mergedStep.offset;
+  floaterProps.styles = deepmerge(floaterProps.styles || {}, mergedStyles.floaterStyles || {});
+
+  delete mergedStyles.floaterStyles;
+
+  if (!mergedStep.disableScrolling) {
+    floaterProps.offset += props.spotlightPadding || step.spotlightPadding || 0;
+  }
+
+  if (step.placementBeacon) {
+    floaterProps.wrapperOptions.placement = step.placementBeacon;
+  }
+
+  if (scrollParent) {
+    floaterProps.options.preventOverflow.boundariesElement = 'window';
+  }
+
+  return {
+    ...mergedStep,
+    locale: deepmerge.all([DEFAULTS.locale, props.locale || {}, mergedStep.locale || {}]),
+    floaterProps,
+    styles: mergedStyles,
+  };
+}
 
 /**
  * Validate if a step is valid
@@ -63,69 +132,4 @@ export function validateSteps(steps: Array<Object>, debug: boolean = false): boo
   }
 
   return steps.every(d => validateStep(d, debug));
-}
-
-function getTourProps(props: JoyrideProps): JoyrideProps {
-  const sharedTourProps = [
-    'beaconComponent',
-    'disableCloseOnEsc',
-    'disableOverlay',
-    'disableOverlayClose',
-    'disableScrolling',
-    'floaterProps',
-    'hideBackButton',
-    'locale',
-    'showProgress',
-    'showSkipButton',
-    'spotlightClicks',
-    'spotlightPadding',
-    'styles',
-    'tooltipComponent',
-  ];
-
-  return Object.keys(props)
-    .filter(d => sharedTourProps.includes(d))
-    .reduce((acc, i) => {
-      acc[i] = props[i]; //eslint-disable-line react/destructuring-assignment
-
-      return acc;
-    }, {});
-}
-
-export function getMergedStep(step: StepProps, props: JoyrideProps): StepProps {
-  if (!step) return undefined;
-
-  const mergedStep = deepmerge.all([getTourProps(props), DEFAULTS.step, step]);
-  const mergedStyles = getStyles(deepmerge(props.styles || {}, step.styles || {}));
-  const scrollParent = hasCustomScrollParent(getElement(step.target));
-  const floaterProps = deepmerge.all([props.floaterProps || {}, DEFAULTS.floaterProps, mergedStep.floaterProps || {}]);
-
-  // Set react-floater props
-  floaterProps.offset = mergedStep.offset;
-  floaterProps.styles = deepmerge(floaterProps.styles || {}, mergedStyles.floaterStyles || {});
-
-  delete mergedStyles.floaterStyles;
-
-  if (mergedStep.floaterProps && mergedStep.floaterProps.offset) {
-    floaterProps.offset = mergedStep.floaterProps.offset;
-  }
-
-  if (!mergedStep.disableScrolling) {
-    floaterProps.offset += props.spotlightPadding || step.spotlightPadding || 0;
-  }
-
-  if (step.placementBeacon) {
-    floaterProps.wrapperOptions.placement = step.placementBeacon;
-  }
-
-  if (scrollParent) {
-    floaterProps.options.preventOverflow.boundariesElement = 'window';
-  }
-
-  return {
-    ...mergedStep,
-    locale: deepmerge.all([DEFAULTS.locale, props.locale || {}, mergedStep.locale || {}]),
-    floaterProps,
-    styles: mergedStyles,
-  };
 }

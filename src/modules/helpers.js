@@ -1,13 +1,103 @@
 // @flow
-import ReactDOM from 'react-dom';
+import { isValidElement } from 'react';
+import { createPortal } from 'react-dom';
 import ExecutionEnvironment from 'exenv';
 import is from 'is-lite';
 
 export const { canUseDOM } = ExecutionEnvironment;
-export const isReact16 = ReactDOM.createPortal !== undefined;
+export const isReact16 = createPortal !== undefined;
 
-export function isMobile(): boolean {
-  return ('ontouchstart' in window) && /Mobi/.test(navigator.userAgent);
+/**
+ * Get the current browser
+ *
+ * @param {string} userAgent
+ *
+ * @returns {String}
+ */
+export function getBrowser(userAgent: string = navigator.userAgent): string {
+  let browser = userAgent;
+
+  if (typeof window === 'undefined') {
+    browser = 'node';
+  } else if (document.documentMode) {
+    browser = 'ie';
+  } else if (/Edge/.test(userAgent)) {
+    browser = 'edge';
+  }
+  // Opera 8.0+
+  else if (Boolean(window.opera) || userAgent.indexOf(' OPR/') >= 0) {
+    browser = 'opera';
+  }
+  // Firefox 1.0+
+  else if (typeof window.InstallTrigger !== 'undefined') {
+    browser = 'firefox';
+  }
+  // Chrome 1+
+  else if (window.chrome) {
+    browser = 'chrome';
+  }
+  // Safari (and Chrome iOS, Firefox iOS)
+  else if (/(Version\/([0-9._]+).*Safari|CriOS|FxiOS| Mobile\/)/.test(userAgent)) {
+    browser = 'safari';
+  }
+
+  return browser;
+}
+
+/**
+ * Get the toString Object type
+ * @param {*} value
+ * @returns {string}
+ */
+export function getObjectType(value: any): string {
+  return Object.prototype.toString
+    .call(value)
+    .slice(8, -1)
+    .toLowerCase();
+}
+
+/**
+ * Get text from React components
+ *
+ * @param {*} root
+ *
+ * @returns {string}
+ */
+export function getText(root: any): string {
+  const content = [];
+
+  const recurse = child => {
+    /* istanbul ignore else */
+    if (typeof child === 'string' || typeof child === 'number') {
+      content.push(child);
+    } else if (Array.isArray(child)) {
+      child.forEach(c => recurse(c));
+    } else if (child && child.props) {
+      const { children } = child.props;
+
+      if (Array.isArray(children)) {
+        children.forEach(c => recurse(c));
+      } else {
+        recurse(children);
+      }
+    }
+  };
+
+  recurse(root);
+
+  return content.join(' ').trim();
+}
+
+export function hasOwnProperty(value: Object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+export function hasValidKeys(value: Object, keys: Array<any>): boolean {
+  if (!is.plainObject(value) || !is.array(keys)) {
+    return false;
+  }
+
+  return Object.keys(value).every(d => keys.includes(d));
 }
 
 /**
@@ -16,59 +106,86 @@ export function isMobile(): boolean {
  * @param {string} hex
  * @returns {Array}
  */
-export function hexToRGB(hex: string): ?Array<number> {
-  // Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
+export function hexToRGB(hex: string): Array<number> {
   const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  const properHex = hex.replace(shorthandRegex, (m, r, g, b) => (r + r + g + g + b + b));
+  const properHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
 
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(properHex);
-  return result ? [
-    parseInt(result[1], 16),
-    parseInt(result[2], 16),
-    parseInt(result[3], 16),
-  ] : null;
+  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : [];
 }
 
 /**
- * Get the current browser
+ * Decide if the step shouldn't skip the beacon
+ * @param {Object} step
  *
- * @returns {String}
+ * @returns {boolean}
  */
-export function getBrowser(): string {
-  /* istanbul ignore if */
-  if (typeof window === 'undefined') {
-    return 'node';
+export function hideBeacon(step: Object): boolean {
+  return step.disableBeacon || step.placement === 'center';
+}
+
+/**
+ * Compare if two variables are equal
+ *
+ * @param {*} left
+ * @param {*} right
+ *
+ * @returns {boolean}
+ */
+export function isEqual(left: any, right: any): boolean {
+  let type;
+  const hasReactElement = isValidElement(left) || isValidElement(right);
+  const hasUndefined = is.undefined(left) || is.undefined(right);
+
+  if (getObjectType(left) !== getObjectType(right) || hasReactElement || hasUndefined) {
+    return false;
   }
 
-  if (document.documentMode) {
-    return 'ie';
+  if (is.domElement(left)) {
+    return left.isSameNode(right);
   }
 
-  if (/Edge/.test(navigator.userAgent)) {
-    return 'edge';
+  if (is.number(left)) {
+    return left === right;
   }
 
-  // Opera 8.0+
-  if (Boolean(window.opera) || navigator.userAgent.indexOf(' OPR/') >= 0) {
-    return 'opera';
+  if (is.function(left)) {
+    return left.toString() === right.toString();
   }
 
-  // Firefox 1.0+
-  if (typeof window.InstallTrigger !== 'undefined') {
-    return 'firefox';
+  for (const key in left) {
+    /* istanbul ignore else */
+    if (hasOwnProperty(left, key)) {
+      if (typeof left[key] === 'undefined' || typeof right[key] === 'undefined') {
+        return false;
+      }
+
+      type = getObjectType(left[key]);
+
+      if (['object', 'array'].includes(type) && isEqual(left[key], right[key])) {
+        continue;
+      }
+
+      if (type === 'function' && isEqual(left[key], right[key])) {
+        continue;
+      }
+
+      if (left[key] !== right[key]) {
+        return false;
+      }
+    }
   }
 
-  // Chrome 1+
-  if (window.chrome) {
-    return 'chrome';
+  for (const p in right) {
+    /* istanbul ignore else */
+    if (hasOwnProperty(right, p)) {
+      if (typeof left[p] === 'undefined') {
+        return false;
+      }
+    }
   }
 
-  // Safari (and Chrome iOS, Firefox iOS)
-  if (/(Version\/([0-9._]+).*Safari|CriOS|FxiOS| Mobile\/)/.test(navigator.userAgent)) {
-    return 'safari';
-  }
-
-  return navigator.userAgent;
+  return true;
 }
 
 /**
@@ -94,80 +211,29 @@ export function log({ title, data, warn = false, debug = false }: Object) {
   /* eslint-disable no-console */
   const logFn = warn ? console.warn || console.error : console.log;
 
-  if (debug && title && data) {
-    console.groupCollapsed(`%creact-joyride: ${title}`, 'color: #ff0044; font-weight: bold; font-size: 12px;');
+  if (debug) {
+    if (title && data) {
+      console.groupCollapsed(
+        `%creact-joyride: ${title}`,
+        'color: #ff0044; font-weight: bold; font-size: 12px;',
+      );
 
-    if (Array.isArray(data)) {
-      data.forEach(d => {
-        if (is.plainObject(d) && d.key) {
-          logFn.apply(console, [d.key, d.value]);
-        }
-        else {
-          logFn.apply(console, [d]);
-        }
-      });
-    }
-    else {
-      logFn.apply(console, [data]);
-    }
+      if (Array.isArray(data)) {
+        data.forEach(d => {
+          if (is.plainObject(d) && d.key) {
+            logFn.apply(console, [d.key, d.value]);
+          } else {
+            logFn.apply(console, [d]);
+          }
+        });
+      } else {
+        logFn.apply(console, [data]);
+      }
 
-    console.groupEnd();
+      console.groupEnd();
+    } else {
+      console.error('Missing title or data props');
+    }
   }
   /* eslint-enable */
-}
-
-export function hasKey(value: Object, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(value, key);
-}
-
-export function hasValidKeys(value: Object, keys: string | Array<any>): boolean {
-  if (!is.plainObject(value) || !is.array(keys)) {
-    return false;
-  }
-  let validKeys = keys;
-
-  if (is.string(keys)) {
-    validKeys = [keys];
-  }
-
-  return Object.keys(value).every(d => validKeys.includes(d));
-}
-
-export function isEqual(a: any, b: any): boolean {
-  let p;
-  let t;
-
-  for (p in a) {
-    if (Object.prototype.hasOwnProperty.call(a, p)) {
-      if (typeof b[p] === 'undefined') {
-        return false;
-      }
-
-      if (b[p] && !a[p]) {
-        return false;
-      }
-
-      t = typeof a[p];
-
-      if (t === 'object' && !isEqual(a[p], b[p])) {
-        return false;
-      }
-
-      if (t === 'function' && (typeof b[p] === 'undefined' || a[p].toString() !== b[p].toString())) {
-        return false;
-      }
-
-      if (a[p] !== b[p]) {
-        return false;
-      }
-    }
-  }
-
-  for (p in b) {
-    if (typeof a[p] === 'undefined') {
-      return false;
-    }
-  }
-
-  return true;
 }

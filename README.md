@@ -2,67 +2,54 @@
 
 [![](https://badge.fury.io/js/react-joyride.svg)](https://www.npmjs.com/package/react-joyride) [![](https://travis-ci.org/gilbarbara/react-joyride.svg)](https://travis-ci.org/gilbarbara/react-joyride) [![](https://api.codeclimate.com/v1/badges/43ecb5536910133429bd/maintainability)](https://codeclimate.com/github/gilbarbara/react-joyride/maintainability) [![](https://api.codeclimate.com/v1/badges/43ecb5536910133429bd/test_coverage)](https://codeclimate.com/github/gilbarbara/react-joyride/test_coverage)
 
-[![Joyride example image](http://gilbarbara.github.io/react-joyride/media/example.png)](http://gilbarbara.github.io/react-joyride/)
+[![Joyride example image](http://gilbarbara.com/files/react-joyride.png)](https://react-joyride.com/)
 
-Create a tour for your app!  
-Use it to showcase your app for new users! Or explain functionality of complex features!  
+#### Create awesome tours for your app!
 
-#### View the demo [here](https://2zpjporp4p.codesandbox.io/)
+Showcase your app to new users or explain functionality of new features.
 
-You can edit the demo [here](https://codesandbox.io/s/2zpjporp4p)
+It uses [react-floater](https://github.com/gilbarbara/react-floater) for positioning and styling.  
+And you can use your own components too!
 
->  If you are looking for the documentation for the old 1.x version, go [here](https://github.com/gilbarbara/react-joyride/tree/v1.11.4)
+**View the demo [here](https://react-joyride.com/)**
+
+**Read the [docs](https://docs.react-joyride.com/)**
+
+Chat about it in our [Spectrum community](https://spectrum.chat/react-joyride)
 
 ## Setup
 
 ```bash
-npm i react-joyride@next
+npm i react-joyride
 ```
 
 ## Getting Started
 
-Just set a `steps` array to the Joyride component and you're good to go!
-
-You can use your own component for the tooltip body or beacon, if you want.
-
-```js
+```jsx
 import Joyride from 'react-joyride';
 
 export class App extends React.Component {
   state = {
-    run: false,
     steps: [
       {
         target: '.my-first-step',
-        content: 'This if my awesome feature!',
-        placement: 'bottom',
+        content: 'This is my awesome feature!',
       },
       {
         target: '.my-other-step',
-        content: 'This if my awesome feature!',
-        placement: 'bottom',
+        content: 'This another awesome feature!',
       },
       ...
     ]
   };
 
-  componentDidMount() {
-    this.setState({ run: true });
-  }
-
-  callback = (data) => {
-    const { action, index, type } = data;
-  };
-
   render () {
-    const { steps, run } = this.state;
+    const { steps } = this.state;
 
     return (
       <div className="app">
         <Joyride
           steps={steps}
-          run={run}
-          callback={this.callback}
           ...
         />
         ...
@@ -72,19 +59,24 @@ export class App extends React.Component {
 }
 ```
 
-## Documentation
+## Development
 
-[Props](docs/props.md)
+Setting up a local development environment is easy!
 
-[Step](docs/step.md)
+Clone (or fork) this repo on your machine, navigate to its location in the terminal and run:
 
-[Styling](docs/styling.md)
+```bash
+npm install
+npm link # link your local repo to your global packages
+npm run watch # build the files and watch for changes
+```
 
-[Callback](docs/callback.md)
+Now clone https://github.com/gilbarbara/react-joyride-demo and run:
 
-[Constants](docs/constants.md)
+```bash
+npm install
+npm link react-joyride # just link your local copy into this project's node_modules
+npm start
+```
 
-[Migration from 1.x](docs/migration.md)
-
-This library uses [react-floater](https://github.com/gilbarbara/react-floater) and [popper.js](https://github.com/FezVrasta/popper.js) for positioning and styling.
-
+**Start coding!** 🎉

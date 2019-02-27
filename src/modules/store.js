@@ -1,14 +1,10 @@
 // @flow
 import is from 'is-lite';
-import STATUS from '../constants/status';
-import ACTIONS from '../constants/actions';
-import LIFECYCLE from '../constants/lifecycle';
+import { ACTIONS, LIFECYCLE, STATUS } from '../constants';
 
 import { hasValidKeys } from './helpers';
 
-import type { StateHelpers, StateInstance, StateObject } from '../config/types';
-
-const defaultState: StateObject = {
+const defaultState: StoreState = {
   action: '',
   controlled: false,
   index: 0,
@@ -19,7 +15,7 @@ const defaultState: StateObject = {
 
 const validKeys = ['action', 'index', 'lifecycle', 'status'];
 
-export default function createStore(props: StateObject): StateInstance {
+export default function createStore(props: StoreState): StoreInstance {
   const store: Map<string, any> = new Map();
   const data: Map<string, any> = new Map();
 
@@ -27,26 +23,25 @@ export default function createStore(props: StateObject): StateInstance {
     listener: Function;
 
     constructor({ continuous = false, stepIndex, steps = [] }: Object = {}) {
-      this.setState({
-        action: ACTIONS.INIT,
-        controlled: is.number(stepIndex),
-        continuous,
-        index: is.number(stepIndex) ? stepIndex : 0,
-        lifecycle: LIFECYCLE.INIT,
-        status: steps.length ? STATUS.READY : STATUS.IDLE,
-      }, true);
+      this.setState(
+        {
+          action: ACTIONS.INIT,
+          controlled: is.number(stepIndex),
+          continuous,
+          index: is.number(stepIndex) ? stepIndex : 0,
+          lifecycle: LIFECYCLE.INIT,
+          status: steps.length ? STATUS.READY : STATUS.IDLE,
+        },
+        true,
+      );
 
       this.setSteps(steps);
-    }
-
-    addListener(listener: Function) {
-      this.listener = listener;
     }
 
     setState(nextState: Object, initial: boolean = false) {
       const state = this.getState();
 
-      const { action, index, lifecycle, status } = {
+      const { action, index, lifecycle, size, status } = {
         ...state,
         ...nextState,
       };
@@ -54,6 +49,7 @@ export default function createStore(props: StateObject): StateInstance {
       store.set('action', action);
       store.set('index', index);
       store.set('lifecycle', lifecycle);
+      store.set('size', size);
       store.set('status', status);
 
       if (initial) {
@@ -68,53 +64,42 @@ export default function createStore(props: StateObject): StateInstance {
       }
     }
 
-    getState(): Object {
+    getState(): StoreState {
       if (!store.size) {
         return { ...defaultState };
       }
 
-      const index = parseInt(store.get('index'), 10);
-      const steps = this.getSteps();
-      const size = steps.length;
-
       return {
-        action: store.get('action'),
-        controlled: store.get('controlled'),
-        index,
-        lifecycle: store.get('lifecycle'),
-        size,
-        status: store.get('status'),
+        action: store.get('action') || '',
+        controlled: store.get('controlled') || false,
+        index: parseInt(store.get('index'), 10),
+        lifecycle: store.get('lifecycle') || '',
+        size: store.get('size') || 0,
+        status: store.get('status') || '',
       };
     }
 
-    getNextState(state: StateObject, force: ?boolean = false): Object {
+    getNextState(state: Object, force: ?boolean = false): StoreState {
       const { action, controlled, index, size, status } = this.getState();
       const newIndex = is.number(state.index) ? state.index : index;
       const nextIndex = controlled && !force ? index : Math.min(Math.max(newIndex, 0), size);
 
       return {
         action: state.action || action,
+        controlled,
         index: nextIndex,
         lifecycle: state.lifecycle || LIFECYCLE.INIT,
-        status: nextIndex === size ? STATUS.FINISHED : (state.status || status),
+        size: state.size || size,
+        status: nextIndex === size ? STATUS.FINISHED : state.status || status,
       };
     }
 
-    hasUpdatedState(oldState: StateObject): boolean {
+    hasUpdatedState(oldState: StoreState): boolean {
       const before = JSON.stringify(oldState);
       const after = JSON.stringify(this.getState());
 
       return before !== after;
     }
-
-    setSteps = (steps: Array<Object>) => {
-      const { size, status } = this.getState();
-      data.set('steps', steps);
-
-      if (status === STATUS.WAITING && !size && steps.length) {
-        this.setState({ status: STATUS.RUNNING });
-      }
-    };
 
     getSteps(): Array<Object> {
       const steps = data.get('steps');
@@ -122,50 +107,66 @@ export default function createStore(props: StateObject): StateInstance {
       return Array.isArray(steps) ? steps : [];
     }
 
-    getHelpers(): StateHelpers {
+    getHelpers(): StoreHelpers {
       return {
-        start: this.start,
-        stop: this.stop,
-        restart: this.restart,
-        reset: this.reset,
         prev: this.prev,
         next: this.next,
         go: this.go,
-        index: this.index,
         close: this.close,
         skip: this.skip,
+        reset: this.reset,
         info: this.info,
       };
     }
 
-    update = (state: StateObject) => {
+    setSteps = (steps: Array<Object>) => {
+      const { size, status } = this.getState();
+      const state = {
+        size: steps.length,
+        status,
+      };
+
+      data.set('steps', steps);
+
+      if (status === STATUS.WAITING && !size && steps.length) {
+        state.status = STATUS.RUNNING;
+      }
+
+      this.setState(state);
+    };
+
+    addListener = (listener: Function) => {
+      this.listener = listener;
+    };
+
+    update = (state: StoreState) => {
       if (!hasValidKeys(state, validKeys)) {
-        throw new Error('state is not valid');
+        throw new Error(`State is not valid. Valid keys: ${validKeys.join(', ')}`);
       }
 
       this.setState({
-        ...this.getNextState({
-          ...this.getState(),
-          ...state,
-          action: state.action || ACTIONS.UPDATE,
-        }, true),
+        ...this.getNextState(
+          {
+            ...this.getState(),
+            ...state,
+            action: state.action || ACTIONS.UPDATE,
+          },
+          true,
+        ),
       });
-    };
-
-    steps = (nextSteps) => {
-      if (!is.array(nextSteps)) return;
-
-      this.setSteps(nextSteps);
     };
 
     start = (nextIndex: number) => {
       const { index, size } = this.getState();
 
       this.setState({
-        ...this.getNextState({
-          action: ACTIONS.START,
-          index: is.number(nextIndex) ? nextIndex : index,
-        }, true),
+        ...this.getNextState(
+          {
+            action: ACTIONS.START,
+            index: is.number(nextIndex) ? nextIndex : index,
+          },
+          true,
+        ),
         status: size ? STATUS.RUNNING : STATUS.WAITING,
       });
     };
@@ -181,26 +182,6 @@ export default function createStore(props: StateObject): StateInstance {
       });
     };
 
-    restart = () => {
-      const { controlled } = this.getState();
-      if (controlled) return;
-
-      this.setState({
-        ...this.getNextState({ action: ACTIONS.RESTART, index: 0 }),
-        status: STATUS.RUNNING,
-      });
-    };
-
-    reset = () => {
-      const { controlled } = this.getState();
-      if (controlled) return;
-
-      this.setState({
-        ...this.getNextState({ action: ACTIONS.RESET, index: 0 }),
-        status: STATUS.READY,
-      });
-    };
-
     prev = () => {
       const { index, status } = this.getState();
       if (status !== STATUS.RUNNING) return;
@@ -212,28 +193,20 @@ export default function createStore(props: StateObject): StateInstance {
 
     next = () => {
       const { index, status } = this.getState();
+
       if (status !== STATUS.RUNNING) return;
 
       this.setState(this.getNextState({ action: ACTIONS.NEXT, index: index + 1 }));
     };
 
-    go = (number) => {
-      const { index, status } = this.getState();
-      if (status !== STATUS.RUNNING) return;
-
-      this.setState({
-        ...this.getNextState({ action: ACTIONS.GO, index: index + number }),
-      });
-    };
-
-    index = (nextIndex) => {
-      const { status } = this.getState();
-      if (status !== STATUS.RUNNING) return;
+    go = nextIndex => {
+      const { controlled, status } = this.getState();
+      if (controlled || status !== STATUS.RUNNING) return;
 
       const step = this.getSteps()[nextIndex];
 
       this.setState({
-        ...this.getNextState({ action: ACTIONS.INDEX, index: nextIndex }),
+        ...this.getNextState({ action: ACTIONS.GO, index: nextIndex }),
         status: step ? status : STATUS.FINISHED,
       });
     };
@@ -258,7 +231,17 @@ export default function createStore(props: StateObject): StateInstance {
       });
     };
 
-    info = (): Object => this.getState()
+    reset = (restart = false) => {
+      const { controlled } = this.getState();
+      if (controlled) return;
+
+      this.setState({
+        ...this.getNextState({ action: ACTIONS.RESET, index: 0 }),
+        status: restart ? STATUS.RUNNING : STATUS.READY,
+      });
+    };
+
+    info = (): Object => this.getState();
   }
 
   return new Store(props);

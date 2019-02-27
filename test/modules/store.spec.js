@@ -16,19 +16,7 @@ describe('store', () => {
   describe('without initial values', () => {
     const store = createStore();
 
-    const {
-      go,
-      index,
-      info,
-      next,
-      prev,
-      reset,
-      restart,
-      start,
-      steps,
-      stop,
-      update,
-    } = store;
+    const { go, info, next, prev, reset, setSteps, start, stop, update } = store;
 
     it('should have initiated a new store', () => {
       expect(store.constructor.name).toBe('Store');
@@ -43,7 +31,7 @@ describe('store', () => {
       });
     });
 
-    it('shouldn\'t be able to start without steps', () => {
+    it("shouldn't be able to start without steps", () => {
       start();
 
       expect(info()).toEqual({
@@ -70,7 +58,7 @@ describe('store', () => {
     });
 
     it('should be able to add steps', () => {
-      steps(stepsData);
+      setSteps(stepsData);
 
       expect(info()).toEqual({
         action: ACTIONS.START,
@@ -82,7 +70,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call prev but no changes [1st step]', () => {
+    it('should be able to call `prev` but no changes [1st step]', () => {
       prev();
       expect(info()).toEqual({
         action: ACTIONS.PREV,
@@ -94,7 +82,7 @@ describe('store', () => {
       });
     });
 
-    it(`should be able to update lifecycle to ${LIFECYCLE.BEACON}`, () => {
+    it(`should be able to \`update\` lifecycle to ${LIFECYCLE.BEACON}`, () => {
       update({ lifecycle: LIFECYCLE.BEACON });
 
       expect(info()).toEqual({
@@ -107,7 +95,7 @@ describe('store', () => {
       });
     });
 
-    it(`should be able to update lifecycle to ${LIFECYCLE.TOOLTIP}`, () => {
+    it(`should be able to \`update\` lifecycle to ${LIFECYCLE.TOOLTIP}`, () => {
       update({ lifecycle: LIFECYCLE.TOOLTIP });
 
       expect(info()).toEqual({
@@ -120,7 +108,13 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call next [2nd step]', () => {
+    it('should throw an error with `update` with invalid keys', () => {
+      expect(() =>
+        update({ valid: true, lifecycle: LIFECYCLE.TOOLTIP }),
+      ).toThrowErrorMatchingSnapshot();
+    });
+
+    it('should be able to call `next` [2nd step]', () => {
       next();
       expect(info()).toEqual({
         action: ACTIONS.NEXT,
@@ -132,7 +126,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call prev [1st step]', () => {
+    it('should be able to call `prev` [1st step]', () => {
       prev();
       expect(info()).toEqual({
         action: ACTIONS.PREV,
@@ -144,7 +138,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call stop', () => {
+    it('should be able to call `stop`', () => {
       stop();
       expect(info()).toEqual({
         action: ACTIONS.STOP,
@@ -156,7 +150,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call start [1st step]', () => {
+    it('should be able to call `start` [1st step]', () => {
       start();
       expect(info()).toEqual({
         action: ACTIONS.START,
@@ -168,7 +162,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call stop again but with `advance`', () => {
+    it('should be able to call `stop` again but with `advance`', () => {
       stop(true);
       expect(info()).toEqual({
         action: ACTIONS.STOP,
@@ -180,8 +174,7 @@ describe('store', () => {
       });
     });
 
-
-    it('should be able to call start [2nd step]', () => {
+    it('should be able to call `start` [2nd step]', () => {
       start();
       expect(info()).toEqual({
         action: ACTIONS.START,
@@ -193,7 +186,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call next [3rd step]', () => {
+    it('should be able to call `next` [3rd step]', () => {
       next();
       expect(info()).toEqual({
         action: ACTIONS.NEXT,
@@ -205,7 +198,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call next [4th step]', () => {
+    it('should be able to call `next` [4th step]', () => {
       next();
       expect(info()).toEqual({
         action: ACTIONS.NEXT,
@@ -217,7 +210,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call next [5th step]', () => {
+    it('should be able to call `next` [5th step]', () => {
       next();
       expect(info()).toEqual({
         action: ACTIONS.NEXT,
@@ -229,7 +222,7 @@ describe('store', () => {
       });
     });
 
-    it(`should be able to update lifecycle to ${LIFECYCLE.BEACON}`, () => {
+    it(`should be able to \`update\` lifecycle to ${LIFECYCLE.BEACON}`, () => {
       update({ lifecycle: LIFECYCLE.BEACON });
 
       expect(info()).toEqual({
@@ -242,7 +235,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call next again but the tour has finished', () => {
+    it('should be able to call `next` again but the tour has finished', () => {
       next();
       expect(info()).toEqual({
         action: ACTIONS.NEXT,
@@ -254,7 +247,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call next again but there\'s no change to the store', () => {
+    it("should be able to call `next` again but there's no change to the store", () => {
       next();
       expect(info()).toEqual({
         action: ACTIONS.NEXT,
@@ -266,20 +259,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call restart', () => {
-      restart();
-
-      expect(info()).toEqual({
-        action: ACTIONS.RESTART,
-        controlled: false,
-        index: 0,
-        lifecycle: LIFECYCLE.INIT,
-        size: stepsData.length,
-        status: STATUS.RUNNING,
-      });
-    });
-
-    it('should be able to call reset', () => {
+    it('should be able to call `reset`', () => {
       reset();
 
       expect(info()).toEqual({
@@ -292,7 +272,20 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call start with custom index and lifecycle', () => {
+    it('should be able to call `reset` to restart', () => {
+      reset(true);
+
+      expect(info()).toEqual({
+        action: ACTIONS.RESET,
+        controlled: false,
+        index: 0,
+        lifecycle: LIFECYCLE.INIT,
+        size: stepsData.length,
+        status: STATUS.RUNNING,
+      });
+    });
+
+    it('should be able to call `start` with custom index and lifecycle', () => {
       start(2);
 
       expect(info()).toEqual({
@@ -305,20 +298,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call index [1st step]', () => {
-      index(0);
-
-      expect(info()).toEqual({
-        action: ACTIONS.INDEX,
-        controlled: false,
-        index: 0,
-        lifecycle: LIFECYCLE.INIT,
-        size: stepsData.length,
-        status: STATUS.RUNNING,
-      });
-    });
-
-    it('should be able to call go [2nd step]', () => {
+    it('should be able to call `go` [2nd step]', () => {
       go(2);
 
       expect(info()).toEqual({
@@ -331,8 +311,8 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call go [3rd step]', () => {
-      go(-1);
+    it('should be able to call `go` [3rd step]', () => {
+      go(1);
 
       expect(info()).toEqual({
         action: ACTIONS.GO,
@@ -344,20 +324,7 @@ describe('store', () => {
       });
     });
 
-    it('should be able to call go with a big negative number [1st step]', () => {
-      go(-10);
-
-      expect(info()).toEqual({
-        action: ACTIONS.GO,
-        controlled: false,
-        index: 0,
-        lifecycle: LIFECYCLE.INIT,
-        size: stepsData.length,
-        status: STATUS.RUNNING,
-      });
-    });
-
-    it('should be able to call go with a big number and finish the tour', () => {
+    it('should be able to call `go` with a big number and finish the tour', () => {
       go(10);
 
       expect(info()).toEqual({
@@ -374,10 +341,7 @@ describe('store', () => {
   describe('with initial steps', () => {
     const store = createStore({ steps: stepsData });
 
-    const {
-      info,
-      update,
-    } = store;
+    const { info, update } = store;
 
     it('should have initiated a new store', () => {
       expect(store.constructor.name).toBe('Store');
@@ -403,18 +367,6 @@ describe('store', () => {
       update({ status: STATUS.READY });
 
       expect(mockSyncStore).toHaveBeenCalledTimes(3);
-    });
-  });
-
-  describe('with controlled prop', () => {
-    const store = createStore({ controlled: true });
-
-    const {
-      update,
-    } = store;
-
-    it('should throw an error if try to update the `controlled` prop', () => {
-      expect(() => update({ controlled: false })).toThrow();
     });
   });
 });

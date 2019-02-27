@@ -1,9 +1,16 @@
 # Props
 
-**beaconComponent** {React.Node}  
-A React component or function to be used instead the default Beacon.
+The only required prop is `steps` with an array of [steps](step.md).  
+Below is the complete list of possible props and options:
 
-**callback** {function}  
+{% hint style="info" %}
+▶︎ indicates the default value if there's one
+{% endhint %}
+
+**beaconComponent** {ReactNode}  
+A React component or function to be used instead the default Beacon. Check [custom components](custom-components.md) for details.
+
+**callback** {\(\) =&gt; CallbackProps\)}  
 It will be called when Joyride's state changes. it returns a single parameter with the state.
 
 **continuous** {boolean} ▶︎ `false`  
@@ -24,13 +31,18 @@ Don't close the tooltip when clicking the overlay.
 **disableScrolling** {boolean} ▶︎ `false`  
 Disable auto scrolling between steps.
 
-**floaterProps** {Object}  
+**disableScrollParentFix** {boolean} ▶︎ `false`  
+Disable the fix to handle "unused" overflow parents
+
+**floaterProps** {object}  
 Options to be passed to [react-floater](https://github.com/gilbarbara/react-floater).
+
+**getHelpers** {\(\) =&gt; StoreHelpers\)} Get the store methods to control the tour programatically. `prev, next, go, close, skip, reset, info`
 
 **hideBackButton** {boolean} ▶︎ `false`  
 Hide the "back" button.
 
-**locale** {Object} ▶︎ `{ back: 'Back', close: 'Close', last: 'Last', next: 'Next', skip: 'Skip' }`  
+**locale** {object} ▶︎ `{ back: 'Back', close: 'Close', last: 'Last', next: 'Next', skip: 'Skip' }`  
 The strings used in the tooltip.
 
 **run** {boolean} ▶︎ `true`  
@@ -48,23 +60,27 @@ Display the tour progress in the next button \_e.g. 2/5 \_in `continuous` tours.
 **showSkipButton** {boolean} ▶︎ `false`  
 Display a button to skip the tour.
 
-**spotlightClicks** {boolean} ▶︎ `false`  
+**spotlightClicks** {number} ▶︎ `false`  
 Allow mouse and touch events thru the spotlight. You can click links in your app.
 
 **spotlightPadding** {boolean} ▶︎ `10`  
 The padding of the spotlight.
 
 **stepIndex** {number}  
-Setting a number here will turn Joyride into `controlled` mode.  
-You will receive the state events in the `callback` and you'll have to update this prop by yourself.
+Setting a number here will turn Joyride into `controlled` mode.
 
-**steps** {Array&lt;StepProps&gt;} - **required**  
-The tour's steps.
+You'll have to keep an internal state by yourself and update it with the events in the `callback`.
 
-**styles** {Object}  
+> **Do not use this if you don't need it.**
+
+**steps** {Array&lt;Step&gt;} - **required**  
+The tour's steps.  
+Check the [step](step.md) docs for more information.
+
+**styles** {object}  
 Override the [styling](styling.md) of the Tooltip globally
 
 **tooltipComponent** {React.Node}  
-A React component or function to be used instead the default Tooltip excluding the arrow.
-
+A React component or function to be used instead the default Tooltip excluding the arrow.  
+Check [custom components](custom-components.md) for details.
 

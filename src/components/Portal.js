@@ -10,6 +10,8 @@ export default class JoyridePortal extends React.Component {
     if (!canUseDOM) return;
 
     this.node = document.createElement('div');
+
+    /* istanbul ignore else */
     if (props.id) {
       this.node.id = props.id;
     }
@@ -19,10 +21,7 @@ export default class JoyridePortal extends React.Component {
 
   static propTypes = {
     children: PropTypes.element,
-    id: PropTypes.oneOfType([
-      PropTypes.string,
-      PropTypes.number,
-    ]),
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   };
 
   componentDidMount() {
@@ -56,11 +55,7 @@ export default class JoyridePortal extends React.Component {
 
     const { children } = this.props;
 
-    ReactDOM.unstable_renderSubtreeIntoContainer(
-      this,
-      children,
-      this.node,
-    );
+    ReactDOM.unstable_renderSubtreeIntoContainer(this, children, this.node);
 
     return null;
   }
@@ -70,10 +65,7 @@ export default class JoyridePortal extends React.Component {
 
     const { children } = this.props;
 
-    return ReactDOM.createPortal(
-      children,
-      this.node,
-    );
+    return ReactDOM.createPortal(children, this.node);
   }
 
   render() {
