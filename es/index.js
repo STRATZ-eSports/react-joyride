@@ -766,16 +766,16 @@ function getClientRect(element) {
  * @returns {Number}
  */
 
-function getDocumentHeight() {
+function getDocumentHeight(alternateDoculemtElement) {
   var _document = document,
       body = _document.body,
       html = _document.documentElement;
 
-  if (!body || !html) {
+  if (!body || !html || !alternateDoculemtElement) {
     return 0;
   }
 
-  return Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+  return Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight, alternateDoculemtElement ? alternateDoculemtElement.scrollHeight : 0, alternateDoculemtElement ? alternateDoculemtElement.offsetHeight : 0);
 }
 /**
  * Find and return the target DOM element based on a step's 'target'.
@@ -1717,7 +1717,8 @@ function (_React$Component) {
           lifecycle = _this$props3.lifecycle,
           onClickOverlay = _this$props3.onClickOverlay,
           placement = _this$props3.placement,
-          styles = _this$props3.styles;
+          styles = _this$props3.styles,
+          portalRoot = _this$props3.portalRoot;
 
       if (disableOverlay || lifecycle !== LIFECYCLE.TOOLTIP) {
         return null;
@@ -1732,7 +1733,7 @@ function (_React$Component) {
 
       var stylesOverlay = _objectSpread({
         cursor: 'pointer',
-        height: getDocumentHeight(),
+        height: getDocumentHeight(portalRoot),
         pointerEvents: mouseOverSpotlight ? 'none' : 'auto'
       }, baseStyles);
 
@@ -1798,7 +1799,8 @@ _defineProperty(JoyrideOverlay, "propTypes", {
   spotlightClicks: PropTypes.bool.isRequired,
   spotlightPadding: PropTypes.number,
   styles: PropTypes.object.isRequired,
-  target: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired
+  target: PropTypes.oneOfType([PropTypes.object, PropTypes.string]).isRequired,
+  portalRoot: PropTypes.object
 });
 
 var JoyrideTooltipCloseBtn = function JoyrideTooltipCloseBtn(_ref) {
@@ -2437,7 +2439,8 @@ function (_React$Component) {
       }, React.createElement(JoyrideOverlay, _extends({}, step, {
         debug: debug,
         lifecycle: lifecycle,
-        onClickOverlay: this.handleClickOverlay
+        onClickOverlay: this.handleClickOverlay,
+        portalRoot: portalRoot
       }))), React.createElement(Floater, _extends({
         component: React.createElement(JoyrideTooltip, {
           continuous: continuous,

@@ -22,10 +22,10 @@ export function getClientRect(element: HTMLElement): Object {
  * Helper function to get the browser-normalized "document height"
  * @returns {Number}
  */
-export function getDocumentHeight(): number {
+export function getDocumentHeight(alternateDoculemtElement: HTMLElement): number {
   const { body, documentElement: html } = document;
 
-  if (!body || !html) {
+  if (!body || !html || !alternateDoculemtElement) {
     return 0;
   }
 
@@ -35,6 +35,8 @@ export function getDocumentHeight(): number {
     html.clientHeight,
     html.scrollHeight,
     html.offsetHeight,
+    alternateDoculemtElement ? alternateDoculemtElement.scrollHeight : 0,
+    alternateDoculemtElement ? alternateDoculemtElement.offsetHeight : 0,
   );
 }
 

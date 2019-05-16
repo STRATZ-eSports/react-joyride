@@ -29,6 +29,7 @@ export default class JoyrideStep extends React.Component {
     helpers: PropTypes.object.isRequired,
     index: PropTypes.number.isRequired,
     lifecycle: PropTypes.string.isRequired,
+    portalRoot: PropTypes.object,
     setPopper: PropTypes.func.isRequired,
     size: PropTypes.number.isRequired,
     status: PropTypes.string.isRequired,
@@ -76,7 +77,6 @@ export default class JoyrideStep extends React.Component {
       tooltipComponent: componentTypeWithRefs,
     }).isRequired,
     update: PropTypes.func.isRequired,
-    portalRoot: PropTypes.object,
   };
 
   componentDidMount() {
@@ -273,6 +273,7 @@ export default class JoyrideStep extends React.Component {
             debug={debug}
             lifecycle={lifecycle}
             onClickOverlay={this.handleClickOverlay}
+            portalRoot={portalRoot}
           />
         </Portal>
         <Floater

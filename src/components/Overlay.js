@@ -36,6 +36,7 @@ export default class JoyrideOverlay extends React.Component {
     lifecycle: PropTypes.string.isRequired,
     onClickOverlay: PropTypes.func.isRequired,
     placement: PropTypes.string.isRequired,
+    portalRoot: PropTypes.object,
     spotlightClicks: PropTypes.bool.isRequired,
     spotlightPadding: PropTypes.number,
     styles: PropTypes.object.isRequired,
@@ -172,7 +173,7 @@ export default class JoyrideOverlay extends React.Component {
 
   render() {
     const { mouseOverSpotlight, showSpotlight } = this.state;
-    const { disableOverlay, lifecycle, onClickOverlay, placement, styles } = this.props;
+    const { disableOverlay, lifecycle, onClickOverlay, placement, styles, portalRoot } = this.props;
 
     if (disableOverlay || lifecycle !== LIFECYCLE.TOOLTIP) {
       return null;
@@ -187,7 +188,7 @@ export default class JoyrideOverlay extends React.Component {
 
     const stylesOverlay = {
       cursor: 'pointer',
-      height: getDocumentHeight(),
+      height: getDocumentHeight(portalRoot),
       pointerEvents: mouseOverSpotlight ? 'none' : 'auto',
       ...baseStyles,
     };
