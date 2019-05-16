@@ -16,7 +16,8 @@ export default class JoyridePortal extends React.Component {
       this.node.id = props.id;
     }
 
-    document.body.appendChild(this.node);
+    this.root = props.root || document.body;
+    this.root.appendChild(this.node);
   }
 
   static propTypes = {
@@ -47,7 +48,11 @@ export default class JoyridePortal extends React.Component {
       ReactDOM.unmountComponentAtNode(this.node);
     }
 
-    document.body.removeChild(this.node);
+    try {
+      this.root.removeChild(this.node);
+    } catch (error) {
+      console.warn('[react-joyride:portal] failed to remove child');
+    }
   }
 
   renderReact15() {

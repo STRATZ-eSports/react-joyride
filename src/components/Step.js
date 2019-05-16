@@ -76,6 +76,7 @@ export default class JoyrideStep extends React.Component {
       tooltipComponent: componentTypeWithRefs,
     }).isRequired,
     update: PropTypes.func.isRequired,
+    portalRoot: PropTypes.object,
   };
 
   componentDidMount() {
@@ -257,7 +258,7 @@ export default class JoyrideStep extends React.Component {
   }
 
   render() {
-    const { continuous, debug, helpers, index, lifecycle, size, step } = this.props;
+    const { continuous, debug, helpers, index, lifecycle, size, step, portalRoot } = this.props;
     const target = getElement(step.target);
 
     if (!validateStep(step) || !is.domElement(target)) {
@@ -266,7 +267,7 @@ export default class JoyrideStep extends React.Component {
 
     return (
       <div key={`JoyrideStep-${index}`} className="react-joyride__step">
-        <Portal id="react-joyride-portal">
+        <Portal id="react-joyride-portal" root={portalRoot}>
           <Overlay
             {...step}
             debug={debug}

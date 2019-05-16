@@ -356,7 +356,7 @@ function isEqual(left, right) {
     return left === right;
   }
 
-  if (is.function(left)) {
+  if (is["function"](left)) {
     return left.toString() === right.toString();
   }
 
@@ -1234,7 +1234,7 @@ function getMergedStep(step, props) {
     isMergeableObject: is.plainObject
   });
   var mergedStyles = getStyles(deepmerge(props.styles || {}, step.styles || {}));
-  var scrollParent$$1 = hasCustomScrollParent(getElement(step.target), mergedStep.disableScrollParentFix);
+  var scrollParent = hasCustomScrollParent(getElement(step.target), mergedStep.disableScrollParentFix);
   var floaterProps = deepmerge.all([props.floaterProps || {}, DEFAULTS.floaterProps, mergedStep.floaterProps || {}]); // Set react-floater props
 
   floaterProps.offset = mergedStep.offset;
@@ -1249,7 +1249,7 @@ function getMergedStep(step, props) {
     floaterProps.wrapperOptions.placement = step.placementBeacon;
   }
 
-  if (scrollParent$$1) {
+  if (scrollParent) {
     floaterProps.options.preventOverflow.boundariesElement = 'window';
   }
 
@@ -1446,7 +1446,7 @@ function (_React$Component) {
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(JoyrideBeacon).call(this, props));
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setBeaconRef", function (c) {
+    _defineProperty(_assertThisInitialized(_this), "setBeaconRef", function (c) {
       _this.beacon = c;
     });
 
@@ -1562,7 +1562,7 @@ function (_React$Component) {
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(JoyrideOverlay).call(this, props));
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleMouseMove", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleMouseMove", function (e) {
       var mouseOverSpotlight = _this.state.mouseOverSpotlight;
       var _this$stylesSpotlight = _this.stylesSpotlight,
           height = _this$stylesSpotlight.height,
@@ -1583,7 +1583,7 @@ function (_React$Component) {
       }
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleScroll", function () {
+    _defineProperty(_assertThisInitialized(_this), "handleScroll", function () {
       var isScrolling = _this.state.isScrolling;
 
       if (!isScrolling) {
@@ -1604,7 +1604,7 @@ function (_React$Component) {
       }, 50);
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleResize", function () {
+    _defineProperty(_assertThisInitialized(_this), "handleResize", function () {
       clearTimeout(_this.resizeTimeout);
       _this.resizeTimeout = setTimeout(function () {
         clearTimeout(_this.resizeTimeout);
@@ -1959,19 +1959,19 @@ function (_React$Component) {
 
     _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(JoyrideTooltip)).call.apply(_getPrototypeOf2, [this].concat(args)));
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickBack", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleClickBack", function (e) {
       e.preventDefault();
       var helpers = _this.props.helpers;
       helpers.prev();
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickClose", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleClickClose", function (e) {
       e.preventDefault();
       var helpers = _this.props.helpers;
       helpers.close();
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickPrimary", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleClickPrimary", function (e) {
       e.preventDefault();
       var _this$props = _this.props,
           continuous = _this$props.continuous,
@@ -1985,13 +1985,13 @@ function (_React$Component) {
       helpers.next();
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickSkip", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleClickSkip", function (e) {
       e.preventDefault();
       var helpers = _this.props.helpers;
       helpers.skip();
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "getElementsProps", function () {
+    _defineProperty(_assertThisInitialized(_this), "getElementsProps", function () {
       var _this$props2 = _this.props,
           continuous = _this$props2.continuous,
           isLastStep = _this$props2.isLastStep,
@@ -2121,7 +2121,10 @@ function (_React$Component) {
       _this.node.id = props.id;
     }
 
-    document.body.appendChild(_this.node);
+    _this.root = props.root || document.body;
+
+    _this.root.appendChild(_this.node);
+
     return _this;
   }
 
@@ -2152,7 +2155,11 @@ function (_React$Component) {
         ReactDOM.unmountComponentAtNode(this.node);
       }
 
-      document.body.removeChild(this.node);
+      try {
+        this.root.removeChild(this.node);
+      } catch (error) {
+        console.warn('[react-joyride:portal] failed to remove child');
+      }
     }
   }, {
     key: "renderReact15",
@@ -2206,11 +2213,11 @@ function (_React$Component) {
 
     _this = _possibleConstructorReturn(this, (_getPrototypeOf2 = _getPrototypeOf(JoyrideStep)).call.apply(_getPrototypeOf2, [this].concat(args)));
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "scope", {
+    _defineProperty(_assertThisInitialized(_this), "scope", {
       removeScope: function removeScope() {}
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickHoverBeacon", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleClickHoverBeacon", function (e) {
       var _this$props = _this.props,
           step = _this$props.step,
           update = _this$props.update;
@@ -2224,7 +2231,7 @@ function (_React$Component) {
       });
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleClickOverlay", function () {
+    _defineProperty(_assertThisInitialized(_this), "handleClickOverlay", function () {
       var _this$props2 = _this.props,
           helpers = _this$props2.helpers,
           step = _this$props2.step;
@@ -2234,11 +2241,11 @@ function (_React$Component) {
       }
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setTooltipRef", function (c) {
+    _defineProperty(_assertThisInitialized(_this), "setTooltipRef", function (c) {
       _this.tooltip = c;
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setPopper", function (popper, type) {
+    _defineProperty(_assertThisInitialized(_this), "setPopper", function (popper, type) {
       var _this$props3 = _this.props,
           action = _this$props3.action,
           setPopper = _this$props3.setPopper,
@@ -2413,7 +2420,8 @@ function (_React$Component) {
           index = _this$props6.index,
           lifecycle = _this$props6.lifecycle,
           size = _this$props6.size,
-          step = _this$props6.step;
+          step = _this$props6.step,
+          portalRoot = _this$props6.portalRoot;
       var target = getElement(step.target);
 
       if (!validateStep(step) || !is.domElement(target)) {
@@ -2424,7 +2432,8 @@ function (_React$Component) {
         key: "JoyrideStep-".concat(index),
         className: "react-joyride__step"
       }, React.createElement(JoyridePortal, {
-        id: "react-joyride-portal"
+        id: "react-joyride-portal",
+        root: portalRoot
       }, React.createElement(JoyrideOverlay, _extends({}, step, {
         debug: debug,
         lifecycle: lifecycle,
@@ -2506,7 +2515,8 @@ _defineProperty(JoyrideStep, "propTypes", {
     title: PropTypes.node,
     tooltipComponent: componentTypeWithRefs
   }).isRequired,
-  update: PropTypes.func.isRequired
+  update: PropTypes.func.isRequired,
+  portalRoot: PropTypes.object
 });
 
 var Joyride =
@@ -2521,7 +2531,7 @@ function (_React$Component) {
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Joyride).call(this, props));
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "initStore", function () {
+    _defineProperty(_assertThisInitialized(_this), "initStore", function () {
       var _this$props = _this.props,
           debug = _this$props.debug,
           getHelpers = _this$props.getHelpers,
@@ -2549,16 +2559,16 @@ function (_React$Component) {
       return _this.store.getState();
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "callback", function (data) {
+    _defineProperty(_assertThisInitialized(_this), "callback", function (data) {
       var callback = _this.props.callback;
       /* istanbul ignore else */
 
-      if (is.function(callback)) {
+      if (is["function"](callback)) {
         callback(data);
       }
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "handleKeyboard", function (e) {
+    _defineProperty(_assertThisInitialized(_this), "handleKeyboard", function (e) {
       var _this$state = _this.state,
           index = _this$state.index,
           lifecycle = _this$state.lifecycle;
@@ -2573,11 +2583,11 @@ function (_React$Component) {
       }
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "syncState", function (state) {
+    _defineProperty(_assertThisInitialized(_this), "syncState", function (state) {
       _this.setState(state);
     });
 
-    _defineProperty(_assertThisInitialized(_assertThisInitialized(_this)), "setPopper", function (popper, type) {
+    _defineProperty(_assertThisInitialized(_this), "setPopper", function (popper, type) {
       if (type === 'wrapper') {
         _this.beaconPopper = popper;
       } else {
@@ -2778,7 +2788,7 @@ function (_React$Component) {
 
         if (status === STATUS.RUNNING && shouldScroll) {
           var hasCustomScroll = hasCustomScrollParent(target, disableScrollParentFix);
-          var scrollParent$$1 = getScrollParent(target, disableScrollParentFix);
+          var scrollParent = getScrollParent(target, disableScrollParentFix);
           var scrollY = Math.floor(getScrollTo(target, scrollOffset, disableScrollParentFix)) || 0;
           log({
             title: 'scrollToStep',
@@ -2822,7 +2832,7 @@ function (_React$Component) {
           /* istanbul ignore else */
 
           if (status === STATUS.RUNNING) {
-            scrollTo(scrollY, scrollParent$$1);
+            scrollTo(scrollY, scrollParent);
           }
         }
       }
@@ -2844,7 +2854,8 @@ function (_React$Component) {
       var _this$props5 = this.props,
           continuous = _this$props5.continuous,
           debug = _this$props5.debug,
-          steps = _this$props5.steps;
+          steps = _this$props5.steps,
+          portalRoot = _this$props5.portalRoot;
       var step = getMergedStep(steps[index], this.props);
       var output;
 
@@ -2856,7 +2867,8 @@ function (_React$Component) {
           setPopper: this.setPopper,
           helpers: this.helpers,
           step: step,
-          update: this.store.update
+          update: this.store.update,
+          portalRoot: portalRoot
         }));
       }
 
@@ -2897,7 +2909,8 @@ _defineProperty(Joyride, "propTypes", {
   stepIndex: PropTypes.number,
   steps: PropTypes.array,
   styles: PropTypes.object,
-  tooltipComponent: componentTypeWithRefs
+  tooltipComponent: componentTypeWithRefs,
+  portalRoot: PropTypes.object
 });
 
 _defineProperty(Joyride, "defaultProps", {

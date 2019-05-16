@@ -56,6 +56,7 @@ class Joyride extends React.Component {
     steps: PropTypes.array,
     styles: PropTypes.object,
     tooltipComponent: componentTypeWithRefs,
+    portalRoot: PropTypes.object,
   };
 
   static defaultProps = {
@@ -371,7 +372,7 @@ class Joyride extends React.Component {
     if (!canUseDOM) return null;
 
     const { index, status } = this.state;
-    const { continuous, debug, steps } = this.props;
+    const { continuous, debug, steps, portalRoot } = this.props;
     const step = getMergedStep(steps[index], this.props);
     let output;
 
@@ -386,6 +387,7 @@ class Joyride extends React.Component {
           helpers={this.helpers}
           step={step}
           update={this.store.update}
+          portalRoot={portalRoot}
         />
       );
     }
